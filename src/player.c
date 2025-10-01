@@ -17,15 +17,16 @@ Player3D player = {0};
 
 void init_player() {
     // Inicializar jugador con valores por defecto
-    player.x = 12.0f;
+    // Posición en el centro del mapa 50x50
+    player.x = MAZE_WIDTH / 2.0f;
     player.y = 0.0f;
-    player.z = 12.0f;
+    player.z = MAZE_HEIGHT / 2.0f;
     player.yaw = 0.0f;
     player.pitch = 0.0f;
     player.height = 1.6f;
-    player.moveSpeed = 0.001f;  // Velocidad original (más lenta)
+    player.moveSpeed = 0.005f;  // Velocidad muy reducida para experiencia realista
     player.rotSpeed = 0.02f;
-    player.mouseSensitivity = 0.001f;
+    player.mouseSensitivity = 0.002f;
 }
 
 void update_player() {
@@ -101,47 +102,26 @@ void handle_rotation(float deltaX, float deltaY) {
 }
 
 bool check_collision(float newX, float newZ) {
-    // Radio del jugador ajustado al tamaño de la matriz (cada celda es 1x1)
-    float playerRadius = 0.3f; // Radio que permite movimiento fluido en pasillos
+    // Radio del jugador más pequeño para movimiento más fluido
+    float playerRadius = 0.2f;
     
-    // Verificar el centro del jugador
+    // Verificar solo el centro del jugador y puntos cardinales
+    // Centro
     if (is_wall((int)(newX + 0.5f), (int)(newZ + 0.5f))) {
         return true;
     }
     
-    // Verificar puntos alrededor del jugador para detectar paredes cercanas
-    // Punto frontal (hacia donde se mueve)
+    // Puntos cardinales
     if (is_wall((int)(newX + playerRadius + 0.5f), (int)(newZ + 0.5f))) {
         return true;
     }
-    // Punto trasero
     if (is_wall((int)(newX - playerRadius + 0.5f), (int)(newZ + 0.5f))) {
         return true;
     }
-    // Punto izquierdo
-    if (is_wall((int)(newX + 0.5f), (int)(newZ - playerRadius + 0.5f))) {
-        return true;
-    }
-    // Punto derecho
     if (is_wall((int)(newX + 0.5f), (int)(newZ + playerRadius + 0.5f))) {
         return true;
     }
-    
-    // Verificar esquinas para evitar que se meta en las esquinas de las paredes
-    // Esquina superior izquierda
-    if (is_wall((int)(newX - playerRadius + 0.5f), (int)(newZ + playerRadius + 0.5f))) {
-        return true;
-    }
-    // Esquina superior derecha
-    if (is_wall((int)(newX + playerRadius + 0.5f), (int)(newZ + playerRadius + 0.5f))) {
-        return true;
-    }
-    // Esquina inferior izquierda
-    if (is_wall((int)(newX - playerRadius + 0.5f), (int)(newZ - playerRadius + 0.5f))) {
-        return true;
-    }
-    // Esquina inferior derecha
-    if (is_wall((int)(newX + playerRadius + 0.5f), (int)(newZ - playerRadius + 0.5f))) {
+    if (is_wall((int)(newX + 0.5f), (int)(newZ - playerRadius + 0.5f))) {
         return true;
     }
     

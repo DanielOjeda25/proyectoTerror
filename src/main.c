@@ -81,7 +81,8 @@ int main() {
     setup_input_callbacks(window);
     
     printf("=== MOTOR 3D - BACKROOMS (MODULAR) ===\n");
-    printf("Laberinto 3D generado dinámicamente con salidas garantizadas\n");
+    printf("Laberinto 3D generado dinámicamente con UNA SOLA salida\n");
+    printf("Sistema de iluminación dinámica y niebla realista activado\n");
     printf("Controles:\n");
     printf("WASD - Mover (adelante/atrás/izquierda/derecha)\n");
     printf("Flechas - Rotar cámara\n");
@@ -90,7 +91,9 @@ int main() {
     printf("SHIFT - Agacharse (próximamente)\n");
     printf("ESC - Liberar mouse / Salir\n");
     printf("Posición inicial: (%.1f, %.1f, %.1f)\n", player.x, player.y, player.z);
-    printf("Escala 3D: 25x25 - Altura 3 unidades\n");
+    printf("Escala 3D: 200x200 - Altura 3 unidades (MAPA MASIVO)\n");
+    printf("Luz: Rango %.1f unidades - Niebla: %.1f-%.1f unidades\n", LIGHT_RANGE, FOG_START_DISTANCE, FOG_END_DISTANCE);
+    printf("Carga progresiva: Solo se renderiza lo que está iluminado\n");
     printf("Sistema modular inicializado\n");
     
     // Loop principal
