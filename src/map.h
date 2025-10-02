@@ -85,6 +85,5 @@ void create_additional_connectivity();
 void generate_light_points();
 void place_light_in_room(Room room);
 void place_light_in_corridor(Corridor corridor);
-void render_light_points();
 
 #endif // MAP_H

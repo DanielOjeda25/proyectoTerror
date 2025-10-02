@@ -2,6 +2,7 @@
 #include "player.h"
 #include "map.h"
 #include "input.h"
+#include "audio.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -36,11 +37,17 @@ void init_player() {
     player.gravity = -0.008f;
     
     // Inicializar sistema de sprint
-    player.normalSpeed = 0.02f;
-    player.sprintSpeed = 0.08f;  // 4x velocidad para sensación real de correr
+    player.normalSpeed = 0.04f;  // Doble de velocidad para caminata más rápida
+    player.sprintSpeed = 0.12f;  // 3x velocidad normal para sprint
     player.sprintDuration = 0.0f;
     player.sprintCooldown = 0.0f;
     player.isSprinting = false;
+    
+    // Inicializar sistema de audio
+    init_audio();
+    
+    // Reproducir sonido ambiental
+    play_ambient_sound();
 }
 
 void update_player() {
@@ -94,28 +101,43 @@ void handle_movement() {
         moved = true;
     }
     
-    // Si se presionó alguna tecla de movimiento
-    if (moved) {
-        // Verificar colisiones con el nuevo sistema robusto
-        if (!check_collision(newX, newZ)) {
-            // No hay colisión, permitir movimiento completo
-            player.x = newX;
-            player.z = newZ;
-        } else {
-            // Hay colisión, intentar movimiento solo en X o solo en Z
-            float newXOnly = player.x + (newX - player.x);
-            float newZOnly = player.z + (newZ - player.z);
-            
-            if (!check_collision(newXOnly, player.z)) {
-                // Movimiento solo en X es válido
-                player.x = newXOnly;
+            // Si se presionó alguna tecla de movimiento
+            if (moved) {
+                // Verificar colisiones con el nuevo sistema robusto
+                if (!check_collision(newX, newZ)) {
+                    // No hay colisión, permitir movimiento completo
+                    player.x = newX;
+                    player.z = newZ;
+                    
+                    // Reproducir sonido de pasos ocasionalmente
+                    static int step_counter = 0;
+                    step_counter++;
+                    
+                    // Diferentes sonidos según la velocidad
+                    if (player.isSprinting) {
+                        if (step_counter % 20 == 0) { // Más frecuente al correr
+                            play_running_sound();
+                        }
+                    } else {
+                        if (step_counter % 30 == 0) { // Normal al caminar
+                            play_footstep_sound();
+                        }
+                    }
+                } else {
+                    // Hay colisión, intentar movimiento solo en X o solo en Z
+                    float newXOnly = player.x + (newX - player.x);
+                    float newZOnly = player.z + (newZ - player.z);
+                    
+                    if (!check_collision(newXOnly, player.z)) {
+                        // Movimiento solo en X es válido
+                        player.x = newXOnly;
+                    }
+                    if (!check_collision(player.x, newZOnly)) {
+                        // Movimiento solo en Z es válido
+                        player.z = newZOnly;
+                    }
+                }
             }
-            if (!check_collision(player.x, newZOnly)) {
-                // Movimiento solo en Z es válido
-                player.z = newZOnly;
-            }
-        }
-    }
 }
 
 void handle_rotation(float deltaX, float deltaY) {

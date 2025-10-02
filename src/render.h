@@ -28,6 +28,15 @@ void update_fog_distance();
 void setup_lighting();
 void update_lighting();
 void update_fog_based_on_lighting();
+void render_light_points();
+void render_minimap();
+void draw_minimap_background();
+void draw_minimap_walls();
+void draw_minimap_player();
+void draw_minimap_lights();
+void load_loading_texture();
+void render_loading_screen();
+void setup_additional_lights();
 void cleanup_renderer();
 
 // Variables de niebla

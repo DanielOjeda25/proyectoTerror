@@ -1078,10 +1078,6 @@ void place_light_in_corridor(Corridor corridor) {
     }
 }
 
-void render_light_points() {
-    // Esta función se llamará desde render.c
-    // Por ahora solo la declaramos, la implementaremos en el sistema de renderizado
-}
 
 void cleanup_map() {
     // Limpiar recursos del mapa (si los hay)
