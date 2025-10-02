@@ -9,62 +9,85 @@ import wave
 import os
 import math
 
-def generate_footstep_sound(duration=0.3, sample_rate=44100, frequency=200, volume=0.3):
-    """Genera un sonido de pisada"""
+def generate_footstep_sound(duration=0.2, sample_rate=44100, frequency=80, volume=0.4):
+    """Genera un sonido de pisada estilo 8-bit arcade"""
     samples = int(duration * sample_rate)
     
-    # Crear ruido blanco como base
-    noise = np.random.normal(0, 0.1, samples)
-    
-    # Añadir tono principal
+    # Crear tono principal de baja frecuencia (estilo arcade)
     t = np.linspace(0, duration, samples)
     tone = np.sin(2 * np.pi * frequency * t) * volume
     
-    # Añadir armónicos para hacer el sonido más realista
-    harmonic1 = np.sin(2 * np.pi * frequency * 2 * t) * volume * 0.3
-    harmonic2 = np.sin(2 * np.pi * frequency * 3 * t) * volume * 0.1
+    # Añadir armónico para sonido más rico
+    harmonic = np.sin(2 * np.pi * frequency * 2 * t) * volume * 0.3
     
-    # Combinar todos los elementos
-    sound = noise + tone + harmonic1 + harmonic2
+    # Combinar elementos (sin ruido para sonido limpio)
+    sound = tone + harmonic
     
-    # Aplicar envolvente (fade in/out)
+    # Aplicar envolvente más agresiva (estilo arcade)
     envelope = np.ones(samples)
-    fade_samples = int(0.01 * sample_rate)  # 10ms fade
-    envelope[:fade_samples] = np.linspace(0, 1, fade_samples)
-    envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
+    attack_samples = int(0.005 * sample_rate)  # 5ms attack
+    decay_samples = int(0.1 * sample_rate)     # 100ms decay
+    
+    # Attack
+    envelope[:attack_samples] = np.linspace(0, 1, attack_samples)
+    # Decay
+    envelope[attack_samples:attack_samples + decay_samples] = np.linspace(1, 0.3, decay_samples)
+    # Sustain
+    envelope[attack_samples + decay_samples:] = 0.3
     
     sound = sound * envelope
+    
+    # Agregar eco sutil para soledad
+    echo_delay = int(0.1 * sample_rate)  # 100ms de delay
+    echo_decay = 0.2  # Decaimiento del eco
+    
+    if len(sound) > echo_delay:
+        echo = np.zeros_like(sound)
+        echo[echo_delay:] = sound[:-echo_delay] * echo_decay
+        sound = sound + echo
     
     # Normalizar
     sound = np.clip(sound, -1, 1)
     
     return sound
 
-def generate_running_sound(duration=0.2, sample_rate=44100, frequency=250, volume=0.4):
-    """Genera un sonido de correr (más rápido y agudo)"""
+def generate_running_sound(duration=0.15, sample_rate=44100, frequency=120, volume=0.5):
+    """Genera un sonido de correr estilo 8-bit arcade"""
     samples = int(duration * sample_rate)
     
-    # Crear ruido blanco como base
-    noise = np.random.normal(0, 0.15, samples)
-    
-    # Añadir tono principal más agudo
+    # Crear tono principal más agudo (estilo arcade)
     t = np.linspace(0, duration, samples)
     tone = np.sin(2 * np.pi * frequency * t) * volume
     
-    # Añadir armónicos
+    # Añadir armónicos para sonido más rico
     harmonic1 = np.sin(2 * np.pi * frequency * 2 * t) * volume * 0.4
     harmonic2 = np.sin(2 * np.pi * frequency * 3 * t) * volume * 0.2
     
-    # Combinar todos los elementos
-    sound = noise + tone + harmonic1 + harmonic2
+    # Combinar elementos (sin ruido para sonido limpio)
+    sound = tone + harmonic1 + harmonic2
     
-    # Aplicar envolvente más agresiva
+    # Aplicar envolvente más agresiva (estilo arcade)
     envelope = np.ones(samples)
-    fade_samples = int(0.005 * sample_rate)  # 5ms fade (más rápido)
-    envelope[:fade_samples] = np.linspace(0, 1, fade_samples)
-    envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
+    attack_samples = int(0.003 * sample_rate)  # 3ms attack
+    decay_samples = int(0.08 * sample_rate)    # 80ms decay
+    
+    # Attack
+    envelope[:attack_samples] = np.linspace(0, 1, attack_samples)
+    # Decay
+    envelope[attack_samples:attack_samples + decay_samples] = np.linspace(1, 0.2, decay_samples)
+    # Sustain
+    envelope[attack_samples + decay_samples:] = 0.2
     
     sound = sound * envelope
+    
+    # Agregar eco sutil
+    echo_delay = int(0.08 * sample_rate)  # 80ms de delay
+    echo_decay = 0.15  # Decaimiento del eco
+    
+    if len(sound) > echo_delay:
+        echo = np.zeros_like(sound)
+        echo[echo_delay:] = sound[:-echo_delay] * echo_decay
+        sound = sound + echo
     
     # Normalizar
     sound = np.clip(sound, -1, 1)
@@ -72,15 +95,15 @@ def generate_running_sound(duration=0.2, sample_rate=44100, frequency=250, volum
     return sound
 
 def save_wav(filename, sound, sample_rate=44100):
-    """Guarda el sonido como archivo WAV"""
-    # Convertir a 16-bit PCM
-    sound_16bit = (sound * 32767).astype(np.int16)
+    """Guarda el sonido como archivo WAV de 8 bits"""
+    # Convertir a 8-bit PCM
+    sound_8bit = (sound * 127 + 128).astype(np.uint8)
     
     with wave.open(filename, 'w') as wav_file:
         wav_file.setnchannels(1)  # Mono
-        wav_file.setsampwidth(2)  # 16-bit
+        wav_file.setsampwidth(1)  # 8-bit
         wav_file.setframerate(sample_rate)
-        wav_file.writeframes(sound_16bit.tobytes())
+        wav_file.writeframes(sound_8bit.tobytes())
 
 def main():
     """Función principal para generar todos los sonidos"""
@@ -118,13 +141,13 @@ def main():
     ambient_duration = 10.0  # 10 segundos
     ambient_samples = int(ambient_duration * 44100)
     
-    # Crear ruido ambiental (como viento o ambiente)
-    ambient_noise = np.random.normal(0, 0.05, ambient_samples)
+    # Crear ruido ambiental muy suave (como viento o ambiente)
+    ambient_noise = np.random.normal(0, 0.02, ambient_samples)  # Reducido de 0.05 a 0.02
     
-    # Añadir tonos bajos para ambiente
+    # Añadir tonos bajos muy suaves para ambiente
     t = np.linspace(0, ambient_duration, ambient_samples)
-    ambient_tone1 = np.sin(2 * np.pi * 60 * t) * 0.1  # 60 Hz
-    ambient_tone2 = np.sin(2 * np.pi * 120 * t) * 0.05  # 120 Hz
+    ambient_tone1 = np.sin(2 * np.pi * 60 * t) * 0.03  # Reducido de 0.1 a 0.03
+    ambient_tone2 = np.sin(2 * np.pi * 120 * t) * 0.015  # Reducido de 0.05 a 0.015
     
     ambient_sound = ambient_noise + ambient_tone1 + ambient_tone2
     
@@ -135,7 +158,7 @@ def main():
     envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
     
     ambient_sound = ambient_sound * envelope
-    ambient_sound = np.clip(ambient_sound, -1, 1)
+    ambient_sound = np.clip(ambient_sound, -1, 1) * 0.4  # Reducir volumen general a 40%
     
     save_wav("sounds/ambient.wav", ambient_sound)
     print("Generado: sounds/ambient.wav")

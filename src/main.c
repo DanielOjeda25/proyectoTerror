@@ -14,6 +14,7 @@
 #include "render.h"
 #include "map.h"
 #include "events.h"
+#include "enemy.h"
 
 // Variables globales
 GLFWwindow* window;
@@ -33,6 +34,16 @@ void setup_opengl() {
     // Ajustar viewport
     glViewport(0, 0, windowWidth, windowHeight);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Fondo negro
+    
+    // Configurar depth testing correctamente
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    
+    // Configurar culling para mejor rendimiento
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 }
 
 // Callback de redimensionado
@@ -83,6 +94,7 @@ int main() {
     init_map();
     init_renderer();
     init_events();
+    init_enemy();
     
     // Configurar callbacks de input
     setup_input_callbacks(window);
@@ -109,7 +121,14 @@ int main() {
         
         // Actualizar sistemas
         update_player();
+        update_enemy();
         process_events();
+        
+        // Verificar si el jugador está muerto
+        if (is_player_dead()) {
+            printf("¡GAME OVER! El enemigo te ha alcanzado.\n");
+            break;
+        }
         
         // Renderizar mundo 3D
         render_world();

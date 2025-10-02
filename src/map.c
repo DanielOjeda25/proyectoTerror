@@ -29,12 +29,16 @@ void init_map() {
 }
 
 void generate_map() {
+    printf("Iniciando generación de mapa...\n");
+    
     // Inicializar todo como paredes
-        for (int x = 0; x < MAZE_WIDTH; x++) {
+    for (int x = 0; x < MAZE_WIDTH; x++) {
         for (int z = 0; z < MAZE_HEIGHT; z++) {
             maze[x][z] = 1;
         }
     }
+    
+    printf("Mapa inicializado con %d x %d = %d celdas\n", MAZE_WIDTH, MAZE_HEIGHT, MAZE_WIDTH * MAZE_HEIGHT);
     
     // Resetear contadores
     roomCount = 0;
@@ -59,6 +63,15 @@ void generate_map() {
     
     // CUARTO: Verificar conectividad y corregir si es necesario
     ensure_connectivity();
+    
+    // Debug: contar muros finales
+    int wall_count = 0;
+    for (int x = 0; x < MAZE_WIDTH; x++) {
+        for (int z = 0; z < MAZE_HEIGHT; z++) {
+            if (maze[x][z] == 1) wall_count++;
+        }
+    }
+    printf("Mapa generado: %d muros de %d celdas totales\n", wall_count, MAZE_WIDTH * MAZE_HEIGHT);
 }
 
 void generate_classic_maze() {

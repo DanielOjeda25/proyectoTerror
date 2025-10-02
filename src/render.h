@@ -34,6 +34,8 @@ void draw_minimap_background();
 void draw_minimap_walls();
 void draw_minimap_player();
 void draw_minimap_lights();
+void render_enemy_minimap(); // Added for enemy
+void render_enemy_3d(); // Added for enemy 3D rendering
 void load_loading_texture();
 void render_loading_screen();
 void setup_additional_lights();

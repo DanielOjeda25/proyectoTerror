@@ -25,7 +25,6 @@ void init_player() {
     player.yaw = 0.0f;
     player.pitch = 0.0f;
     player.height = 1.8f;  // Altura del jugador 1.80m
-    player.moveSpeed = 0.02f;  // Velocidad ajustada para movimiento perceptible
     player.rotSpeed = 0.02f;
     player.mouseSensitivity = 0.001f;  // Sensibilidad más suave y natural
     
@@ -37,8 +36,9 @@ void init_player() {
     player.gravity = -0.008f;
     
     // Inicializar sistema de sprint
-    player.normalSpeed = 0.04f;  // Doble de velocidad para caminata más rápida
-    player.sprintSpeed = 0.12f;  // 3x velocidad normal para sprint
+    player.normalSpeed = 0.03f;  // Velocidad normal de caminata
+    player.sprintSpeed = 0.08f;  // Velocidad de sprint
+    player.moveSpeed = player.normalSpeed;  // Usar la misma velocidad
     player.sprintDuration = 0.0f;
     player.sprintCooldown = 0.0f;
     player.isSprinting = false;
@@ -56,6 +56,9 @@ void update_player() {
     handle_movement();
     handle_jumping();
     apply_gravity();
+    
+    // Actualizar sistema de audio
+    update_audio();
 }
 
 void handle_movement() {

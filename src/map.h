@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 // Constantes del mapa
-#define MAZE_WIDTH 200
-#define MAZE_HEIGHT 200
+#define MAZE_WIDTH 100
+#define MAZE_HEIGHT 100
 #define MAZE_LEVELS 20  // Número de niveles de altura (mucho más alto)
 
 // Estructuras de datos avanzadas para mapas más realistas

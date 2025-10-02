@@ -4,6 +4,7 @@
 #include "map.h"
 #include "image_loader.h"
 #include "particles.h"
+#include "enemy.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -100,7 +101,11 @@ void setup_camera() {
 void draw_cube(float x, float y, float z, float size) {
     float half = size * 0.5f;
     
-    // Configurar material para que responda a la iluminación
+    // Asegurar que no hay blending ni transparencia
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    
+    // Configurar material sólido para que responda a la iluminación
     GLfloat ambient[] = {0.3f, 0.3f, 0.3f, 1.0f};
     GLfloat diffuse[] = {0.7f, 0.7f, 0.7f, 1.0f};
     GLfloat specular[] = {0.1f, 0.1f, 0.1f, 1.0f};
@@ -110,6 +115,9 @@ void draw_cube(float x, float y, float z, float size) {
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+    
+    // Asegurar color sólido
+    glColor3f(1.0f, 1.0f, 1.0f);
     
     glBegin(GL_QUADS);
     
@@ -159,9 +167,18 @@ void draw_cube(float x, float y, float z, float size) {
 }
 
 void draw_tall_wall(int x, int z, int levels) {
+    // Asegurar que no hay blending ni transparencia
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    
     // Dibujar una pared alta compuesta por múltiples cubos apilados
     for (int level = 0; level < levels; level++) {
         float y = level + 0.5f; // Altura de cada nivel
+        
+        // Configurar material sólido para cada cubo
+        glColor3f(1.0f, 1.0f, 1.0f);
+        
+        // Dibujar cubo sólido
         draw_cube(x, y, z, 1.0f);
     }
 }
@@ -216,20 +233,35 @@ void render_world() {
         return;
     }
     
+    // Limpiar buffers con depth testing
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // Asegurar que depth testing esté habilitado
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    
+    // Deshabilitar blending para muros sólidos
+    glDisable(GL_BLEND);
+    
+    // Configurar la cámara
+    setup_camera();
+    
+    // Configurar niebla
+    setup_fog();
+    
     // Actualizar iluminación dinámica
     update_lighting();
     
     // Actualizar partículas
     update_particles();
     
-    // Configurar la cámara
-    setup_camera();
-    
     // Dibujar suelo y techo
     draw_floor();
     draw_ceiling();
     
-    // Renderizar el laberinto 3D con carga progresiva suave basada en la luz
+    // Renderizar el laberinto 3D con muros completamente sólidos
+    // Ordenar por distancia para renderizado suave
     for (int x = 0; x < MAZE_WIDTH; x++) {
         for (int z = 0; z < MAZE_HEIGHT; z++) {
             if (maze[x][z] == 1) { // Si hay una pared
@@ -237,10 +269,14 @@ void render_world() {
                 float distance = sqrt((x - player.x) * (x - player.x) + 
                                      (z - player.z) * (z - player.z));
                 
-                // Renderizar muros sólidos sin transparencia
-                if (distance <= light_range * 1.2f) { // Rango de renderizado
-                    // Muros siempre sólidos - sin transparencia
+                // Renderizar muros sólidos con culling más agresivo
+                if (distance <= 30.0f) { // Rango fijo más pequeño para mejor rendimiento
+                    // Configurar material sólido
                     glColor3f(1.0f, 1.0f, 1.0f);
+                    
+                    // Asegurar que no hay transparencia
+                    glDisable(GL_BLEND);
+                    glDepthMask(GL_TRUE);
                     
                     // Dibujar pared con gran altura (8 niveles)
                     draw_tall_wall(x, z, MAZE_LEVELS);
@@ -250,46 +286,40 @@ void render_world() {
                 float distance = sqrt((x - player.x) * (x - player.x) + 
                                      (z - player.z) * (z - player.z));
                 
-                // Renderizar con transición suave
-                if (distance <= light_range * 1.2f) { // Rango extendido
-                    // Calcular opacidad basada en distancia
-                    float fadeFactor = 1.0f - (distance / (light_range * 1.2f));
-                    fadeFactor = (fadeFactor < 0.0f) ? 0.0f : fadeFactor;
-                    
-                    // Aplicar transparencia suave
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                    glColor4f(1.0f, 1.0f, 1.0f, fadeFactor);
+                // Renderizar elementos decorativos sólidos
+                if (distance <= 25.0f) { // Rango fijo más pequeño
+                    // Elementos decorativos siempre sólidos
+                    glColor3f(1.0f, 1.0f, 1.0f);
+                    glDisable(GL_BLEND);
+                    glDepthMask(GL_TRUE);
                     
                     // Dibujar elemento decorativo más pequeño
                     draw_cube(x, 0.3f, z, 0.2f);
-                    
-                    glDisable(GL_BLEND);
                 }
             }
         }
     }
     
-    // Renderizar puntos de luz como guías
-    render_light_points();
-    
-    // Renderizar mini mapa 2D
-    render_minimap();
-    
-    // Renderizar partículas
-    render_particles();
+            // Renderizar enemigo 3D
+            render_enemy_3d();
+            
+            // Renderizar mini mapa 2D
+            render_minimap();
+            
+            // Renderizar partículas
+            render_particles();
 }
 
 void setup_fog() {
     // Configurar niebla para crear ambiente de backrooms infinito
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_EXP2); // Usar niebla exponencial para efecto más suave
-    glFogf(GL_FOG_DENSITY, 0.008f); // Densidad reducida para menos oscuridad
-    glFogf(GL_FOG_START, 0.0f);
-    glFogf(GL_FOG_END, 1.0f);
+    glFogf(GL_FOG_DENSITY, 0.008f); // Densidad reducida para mejor visibilidad
+    glFogf(GL_FOG_START, 8.0f); // Comenzar la niebla a 8 unidades
+    glFogf(GL_FOG_END, 60.0f); // Terminar la niebla a 60 unidades
     
-    // Color de la niebla menos denso para mejor visibilidad
-    GLfloat fogColor[4] = {0.05f, 0.05f, 0.03f, 1.0f}; // Menos oscuro para mejor visibilidad
+    // Color de la niebla más claro
+    GLfloat fogColor[4] = {0.15f, 0.15f, 0.12f, 1.0f}; // Más claro
     glFogfv(GL_FOG_COLOR, fogColor);
 }
 
@@ -377,80 +407,10 @@ void update_lighting() {
     GLfloat position[] = {light_x, light_y, light_z, 1.0f};
     glLightfv(GL_LIGHT0, GL_POSITION, position);
     
-    // Configurar luces adicionales de los puntos de luz
-    setup_additional_lights();
-    
     // Actualizar niebla basada en la iluminación
     update_fog_based_on_lighting();
 }
 
-void render_light_points() {
-    // Deshabilitar iluminación para los puntos de luz
-    glDisable(GL_LIGHTING);
-    
-    // Renderizar cada punto de luz
-    for (int i = 0; i < lightCount; i++) {
-        if (!lightPoints[i].active) continue;
-        
-        // Calcular distancia desde el jugador
-        float distance = sqrt((lightPoints[i].x - player.x) * (lightPoints[i].x - player.x) + 
-                             (lightPoints[i].z - player.z) * (lightPoints[i].z - player.z));
-        
-        // Solo renderizar si está dentro del rango de visión
-        if (distance <= lightPoints[i].range) {
-            // Configurar color basado en el tipo de luz
-            switch (lightPoints[i].type) {
-                case 0: // Luz tenue - azul tenue
-                    glColor3f(0.2f, 0.3f, 0.8f);
-                    break;
-                case 1: // Luz normal - amarilla
-                    glColor3f(0.9f, 0.9f, 0.6f);
-                    break;
-                case 2: // Luz brillante - blanca
-                    glColor3f(1.0f, 1.0f, 0.9f);
-                    break;
-            }
-            
-            // Aplicar intensidad
-            GLfloat currentColor[4];
-            glGetFloatv(GL_CURRENT_COLOR, currentColor);
-            glColor3f(currentColor[0] * lightPoints[i].intensity,
-                     currentColor[1] * lightPoints[i].intensity,
-                     currentColor[2] * lightPoints[i].intensity);
-            
-            // Dibujar esfera de luz
-            glPushMatrix();
-            glTranslatef(lightPoints[i].x, 1.5f, lightPoints[i].z);
-            
-            // Dibujar esfera simple usando GLU
-            GLUquadric* quad = gluNewQuadric();
-            gluSphere(quad, 0.3f, 8, 8);
-            gluDeleteQuadric(quad);
-            
-            glPopMatrix();
-            
-            // Dibujar halo de luz en el suelo
-            glPushMatrix();
-            glTranslatef(lightPoints[i].x, 0.01f, lightPoints[i].z);
-            glScalef(2.0f, 1.0f, 2.0f);
-            
-            glBegin(GL_QUADS);
-            glColor4f(currentColor[0] * 0.3f,
-                     currentColor[1] * 0.3f,
-                     currentColor[2] * 0.3f, 0.5f);
-            glVertex3f(-1.0f, 0.0f, -1.0f);
-            glVertex3f(1.0f, 0.0f, -1.0f);
-            glVertex3f(1.0f, 0.0f, 1.0f);
-            glVertex3f(-1.0f, 0.0f, 1.0f);
-            glEnd();
-            
-            glPopMatrix();
-        }
-    }
-    
-    // Rehabilitar iluminación
-    glEnable(GL_LIGHTING);
-}
 
 // ===== SISTEMA DE MINI MAPA 2D =====
 
@@ -477,8 +437,8 @@ void render_minimap() {
     // Dibujar mini mapa en la esquina superior derecha
     draw_minimap_background();
     draw_minimap_walls();
-    draw_minimap_lights();
     draw_minimap_player();
+    render_enemy_minimap();
     
     // Restaurar matrices
     glPopMatrix();
@@ -497,7 +457,10 @@ void draw_minimap_background() {
     float x = windowWidth - minimapSize - 10;
     float y = 10;
     
-    glColor4f(0.0f, 0.0f, 0.0f, 0.7f); // Fondo semi-transparente
+    // Habilitar blending para el fondo semi-transparente
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(0.0f, 0.0f, 0.0f, 0.8f); // Fondo más opaco
     
     glBegin(GL_QUADS);
     glVertex2f(x, y);
@@ -507,7 +470,8 @@ void draw_minimap_background() {
     glEnd();
     
     // Borde del mini mapa
-    glColor3f(0.5f, 0.5f, 0.5f);
+    glDisable(GL_BLEND);
+    glColor3f(0.7f, 0.7f, 0.7f); // Borde más visible
     glLineWidth(2.0f);
     glBegin(GL_LINE_LOOP);
     glVertex2f(x, y);
@@ -523,11 +487,15 @@ void draw_minimap_walls() {
     float y = 10;
     float scale = minimapSize / MAZE_WIDTH; // Escala para el mini mapa
     
-    glColor3f(0.8f, 0.8f, 0.8f); // Color de las paredes
+    // Asegurar que no hay blending para muros sólidos
+    glDisable(GL_BLEND);
+    glColor3f(1.0f, 1.0f, 1.0f); // Color de las paredes más brillante
     
+    int wall_count = 0;
     for (int mx = 0; mx < MAZE_WIDTH; mx++) {
         for (int mz = 0; mz < MAZE_HEIGHT; mz++) {
             if (maze[mx][mz] == 1) { // Si hay una pared
+                wall_count++;
                 float mapX = x + mx * scale;
                 float mapY = y + mz * scale;
                 
@@ -540,6 +508,8 @@ void draw_minimap_walls() {
             }
         }
     }
+    
+    // Debug removido para mejor rendimiento
 }
 
 void draw_minimap_player() {
@@ -552,74 +522,32 @@ void draw_minimap_player() {
     float playerMapX = x + player.x * scale;
     float playerMapY = y + player.z * scale;
     
-    // Dibujar jugador como una flecha que apunta en la dirección de movimiento
-    glColor3f(1.0f, 0.0f, 0.0f); // Rojo para el jugador
+    // Dibujar jugador como círculo con dirección
+    glDisable(GL_BLEND);
+    glColor3f(1.0f, 0.0f, 0.0f); // Rojo brillante para el jugador
     
-    glPushMatrix();
-    glTranslatef(playerMapX, playerMapY, 0);
-    glRotatef(player.yaw * 180.0f / M_PI, 0, 0, 1); // Rotar según la dirección
-    
-    // Dibujar flecha más clara y visible
-    float arrowSize = scale * 1.5f; // Hacer la flecha un poco más grande
-    
-    glBegin(GL_TRIANGLES);
-    // Punta de la flecha (más larga y puntiaguda)
-    glVertex2f(0, -arrowSize * 2.5f); // Punta principal
-    glVertex2f(-arrowSize * 0.6f, -arrowSize * 0.8f); // Esquina izquierda
-    glVertex2f(arrowSize * 0.6f, -arrowSize * 0.8f); // Esquina derecha
+    // Dibujar círculo del jugador
+    float radius = scale * 1.5f;
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(playerMapX, playerMapY); // Centro
+    for (int i = 0; i <= 32; i++) {
+        float angle = 2.0f * M_PI * i / 32.0f;
+        glVertex2f(playerMapX + cos(angle) * radius, playerMapY + sin(angle) * radius);
+    }
     glEnd();
     
-    // Cuerpo de la flecha (rectángulo)
-    glBegin(GL_QUADS);
-    glVertex2f(-arrowSize * 0.3f, -arrowSize * 0.8f);
-    glVertex2f(arrowSize * 0.3f, -arrowSize * 0.8f);
-    glVertex2f(arrowSize * 0.3f, arrowSize * 0.8f);
-    glVertex2f(-arrowSize * 0.3f, arrowSize * 0.8f);
-    glEnd();
+    // Dibujar dirección como línea
+    float arrowLength = scale * 2.0f;
+    float arrowX = playerMapX + cos(player.yaw) * arrowLength;
+    float arrowY = playerMapY + sin(player.yaw) * arrowLength;
     
-    // Cola de la flecha (para mayor claridad)
-    glBegin(GL_TRIANGLES);
-    glVertex2f(-arrowSize * 0.3f, arrowSize * 0.8f);
-    glVertex2f(0, arrowSize * 1.2f);
-    glVertex2f(arrowSize * 0.3f, arrowSize * 0.8f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex2f(playerMapX, playerMapY);
+    glVertex2f(arrowX, arrowY);
     glEnd();
-    
-    glPopMatrix();
 }
 
-void draw_minimap_lights() {
-    float minimapSize = 200.0f;
-    float x = windowWidth - minimapSize - 10;
-    float y = 10;
-    float scale = minimapSize / MAZE_WIDTH;
-    
-    // Dibujar puntos de luz en el mini mapa
-    for (int i = 0; i < lightCount; i++) {
-        if (!lightPoints[i].active) continue;
-        
-        float lightMapX = x + lightPoints[i].x * scale;
-        float lightMapY = y + lightPoints[i].z * scale;
-        
-        // Color basado en el tipo de luz
-        switch (lightPoints[i].type) {
-            case 0: // Luz tenue - azul
-                glColor3f(0.2f, 0.3f, 0.8f);
-                break;
-            case 1: // Luz normal - amarilla
-                glColor3f(0.9f, 0.9f, 0.6f);
-                break;
-            case 2: // Luz brillante - blanca
-                glColor3f(1.0f, 1.0f, 0.9f);
-                break;
-        }
-        
-        // Dibujar punto de luz
-        glPointSize(4.0f);
-        glBegin(GL_POINTS);
-        glVertex2f(lightMapX, lightMapY);
-        glEnd();
-    }
-}
 
 // ===== SISTEMA DE PANTALLA DE CARGA =====
 
@@ -771,71 +699,6 @@ void render_loading_screen() {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void setup_additional_lights() {
-    // Configurar luces adicionales para los puntos de luz
-    int light_index = 1; // Empezar desde GL_LIGHT1
-    
-    for (int i = 0; i < lightCount && light_index < 8; i++) {
-        if (!lightPoints[i].active) continue;
-        
-        // Calcular distancia desde el jugador
-        float distance = sqrt((lightPoints[i].x - player.x) * (lightPoints[i].x - player.x) + 
-                             (lightPoints[i].z - player.z) * (lightPoints[i].z - player.z));
-        
-        // Solo configurar luces cercanas
-        if (distance <= lightPoints[i].range * 2.0f) {
-            glEnable(GL_LIGHT0 + light_index);
-            
-            // Configurar posición de la luz
-            GLfloat position[] = {lightPoints[i].x, 1.5f, lightPoints[i].z, 1.0f};
-            glLightfv(GL_LIGHT0 + light_index, GL_POSITION, position);
-            
-            // Configurar colores basados en el tipo de luz
-            GLfloat ambient[4], diffuse[4], specular[4];
-            
-            switch (lightPoints[i].type) {
-                case 0: // Luz tenue - azul
-                    ambient[0] = 0.1f; ambient[1] = 0.1f; ambient[2] = 0.3f; ambient[3] = 1.0f;
-                    diffuse[0] = 0.2f; diffuse[1] = 0.3f; diffuse[2] = 0.8f; diffuse[3] = 1.0f;
-                    specular[0] = 0.1f; specular[1] = 0.1f; specular[2] = 0.4f; specular[3] = 1.0f;
-                    break;
-                case 1: // Luz normal - amarilla
-                    ambient[0] = 0.2f; ambient[1] = 0.2f; ambient[2] = 0.1f; ambient[3] = 1.0f;
-                    diffuse[0] = 0.9f; diffuse[1] = 0.9f; diffuse[2] = 0.6f; diffuse[3] = 1.0f;
-                    specular[0] = 0.4f; specular[1] = 0.4f; specular[2] = 0.2f; specular[3] = 1.0f;
-                    break;
-                case 2: // Luz brillante - blanca
-                    ambient[0] = 0.3f; ambient[1] = 0.3f; ambient[2] = 0.3f; ambient[3] = 1.0f;
-                    diffuse[0] = 1.0f; diffuse[1] = 1.0f; diffuse[2] = 0.9f; diffuse[3] = 1.0f;
-                    specular[0] = 0.5f; specular[1] = 0.5f; specular[2] = 0.5f; specular[3] = 1.0f;
-                    break;
-            }
-            
-            // Aplicar intensidad
-            for (int j = 0; j < 3; j++) {
-                ambient[j] *= lightPoints[i].intensity;
-                diffuse[j] *= lightPoints[i].intensity;
-                specular[j] *= lightPoints[i].intensity;
-            }
-            
-            glLightfv(GL_LIGHT0 + light_index, GL_AMBIENT, ambient);
-            glLightfv(GL_LIGHT0 + light_index, GL_DIFFUSE, diffuse);
-            glLightfv(GL_LIGHT0 + light_index, GL_SPECULAR, specular);
-            
-            // Configurar atenuación
-            glLightf(GL_LIGHT0 + light_index, GL_CONSTANT_ATTENUATION, 1.0f);
-            glLightf(GL_LIGHT0 + light_index, GL_LINEAR_ATTENUATION, 0.1f);
-            glLightf(GL_LIGHT0 + light_index, GL_QUADRATIC_ATTENUATION, 0.01f);
-            
-            light_index++;
-        }
-    }
-    
-    // Deshabilitar luces no utilizadas
-    for (int i = light_index; i < 8; i++) {
-        glDisable(GL_LIGHT0 + i);
-    }
-}
 
 void cleanup_renderer() {
     // Limpiar recursos de renderizado
