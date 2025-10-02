@@ -29,4 +29,10 @@ void create_dead_ends();
 void create_main_corridors(int exits[4]);
 void add_decorative_elements();
 
+// Nuevas funciones para garantizar conectividad
+void create_guaranteed_path_to_exit();
+void ensure_connectivity();
+bool is_connected_to_exit(int startX, int startZ);
+void flood_fill_connectivity(int x, int z, bool visited[MAZE_WIDTH][MAZE_HEIGHT]);
+
 #endif // MAP_H

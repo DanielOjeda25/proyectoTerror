@@ -142,11 +142,11 @@ void draw_tall_wall(int x, int z, int levels) {
 }
 
 void draw_floor() {
-    // Configurar material para el suelo
-    GLfloat ambient[] = {0.1f, 0.1f, 0.1f, 1.0f};
-    GLfloat diffuse[] = {0.3f, 0.3f, 0.3f, 1.0f};
-    GLfloat specular[] = {0.05f, 0.05f, 0.05f, 1.0f};
-    GLfloat shininess[] = {5.0f};
+    // Configurar material para el suelo - color amarillo marrón
+    GLfloat ambient[] = {0.2f, 0.15f, 0.1f, 1.0f};  // Marrón oscuro
+    GLfloat diffuse[] = {0.6f, 0.4f, 0.2f, 1.0f};   // Amarillo marrón
+    GLfloat specular[] = {0.1f, 0.1f, 0.05f, 1.0f}; // Brillo tenue
+    GLfloat shininess[] = {10.0f};
     
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);

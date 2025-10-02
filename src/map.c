@@ -7,6 +7,10 @@
 // Variables globales del mapa
 int maze[MAZE_WIDTH][MAZE_HEIGHT];
 
+// Variables globales para tracking de salida
+static int exit_side = -1;
+static int exit_pos = -1;
+
 void init_map() {
     // Inicializar sistema de mapas
     srand((unsigned int)time(NULL));
@@ -21,7 +25,22 @@ void generate_map() {
         }
     }
     
-    // Generar patrón base más dinámico y aleatorio
+    // PRIMERO: Crear área del jugador en el centro
+    int centerX = MAZE_WIDTH / 2;
+    int centerZ = MAZE_HEIGHT / 2;
+    for (int x = centerX - 5; x <= centerX + 5; x++) {
+        for (int z = centerZ - 5; z <= centerZ + 5; z++) {
+            maze[x][z] = 0; // Área libre 11x11 (más ancha)
+        }
+    }
+    
+    // SEGUNDO: Crear UNA salida garantizada en un borde
+    ensure_single_exit();
+    
+    // TERCERO: Crear camino garantizado desde el centro hasta la salida
+    create_guaranteed_path_to_exit();
+    
+    // CUARTO: Generar patrón base más dinámico y aleatorio
     int patternType = rand() % 4; // 4 tipos diferentes de patrones
     
     switch (patternType) {
@@ -39,20 +58,10 @@ void generate_map() {
             break;
     }
     
-    // Asegurar que el jugador tenga espacio y conexión (centro del mapa 200x200)
-    // Crear un área más grande libre alrededor del jugador
-    int centerX = MAZE_WIDTH / 2;
-    int centerZ = MAZE_HEIGHT / 2;
-    for (int x = centerX - 5; x <= centerX + 5; x++) {
-        for (int z = centerZ - 5; z <= centerZ + 5; z++) {
-            maze[x][z] = 0; // Área libre 11x11 (más ancha)
-        }
-    }
+    // QUINTO: Verificar conectividad y corregir si es necesario
+    ensure_connectivity();
     
-    // Garantizar UNA SOLA salida accesible en un solo borde
-    ensure_single_exit();
-    
-    // Añadir elementos decorativos aleatorios
+    // SEXTO: Añadir elementos decorativos aleatorios
     add_decorative_elements();
 }
 
@@ -159,8 +168,8 @@ void generate_backrooms_pattern() {
 
 void ensure_single_exit() {
     // Seleccionar UN SOLO borde aleatoriamente para la salida
-    int exit_side = rand() % 4; // 0=Norte, 1=Sur, 2=Este, 3=Oeste
-    int exit_pos = 0;
+    exit_side = rand() % 4; // 0=Norte, 1=Sur, 2=Este, 3=Oeste
+    exit_pos = 0;
     
     switch (exit_side) {
         case 0: // Norte (Z=0)
@@ -355,6 +364,140 @@ bool is_wall(int x, int z) {
     return maze[x][z] == 1;
 }
 
+void create_guaranteed_path_to_exit() {
+    // Crear un camino directo y garantizado desde el centro hasta la salida
+    int centerX = MAZE_WIDTH / 2;
+    int centerZ = MAZE_HEIGHT / 2;
+    
+    // Si no hay salida definida, crear una
+    if (exit_side == -1) {
+        ensure_single_exit();
+    }
+    
+    // Crear camino directo desde el centro hacia la salida
+    int currentX = centerX;
+    int currentZ = centerZ;
+    int targetX = 0, targetZ = 0;
+    
+    // Determinar la dirección hacia la salida
+    switch (exit_side) {
+        case 0: // Norte (Z=0)
+            targetX = exit_pos;
+            targetZ = 0;
+            break;
+        case 1: // Sur (Z=MAZE_HEIGHT-1)
+            targetX = exit_pos;
+            targetZ = MAZE_HEIGHT - 1;
+            break;
+        case 2: // Este (X=MAZE_WIDTH-1)
+            targetX = MAZE_WIDTH - 1;
+            targetZ = exit_pos;
+            break;
+        case 3: // Oeste (X=0)
+            targetX = 0;
+            targetZ = exit_pos;
+            break;
+    }
+    
+    // Crear camino directo con algunos desvíos para hacerlo más interesante
+    while (currentX != targetX || currentZ != targetZ) {
+        // Asegurar que el camino actual esté libre
+        maze[currentX][currentZ] = 0;
+        
+        // Calcular dirección hacia el objetivo
+        int dirX = (targetX > currentX) ? 1 : (targetX < currentX) ? -1 : 0;
+        int dirZ = (targetZ > currentZ) ? 1 : (targetZ < currentZ) ? -1 : 0;
+        
+        // A veces tomar un desvío pequeño para hacer el camino más interesante
+        if (rand() % 8 == 0) {
+            if (dirX == 0) dirX = (rand() % 3) - 1; // -1, 0, o 1
+            if (dirZ == 0) dirZ = (rand() % 3) - 1;
+        }
+        
+        // Mover hacia la dirección calculada
+        int newX = currentX + dirX;
+        int newZ = currentZ + dirZ;
+        
+        // Verificar límites
+        if (newX >= 0 && newX < MAZE_WIDTH && newZ >= 0 && newZ < MAZE_HEIGHT) {
+            currentX = newX;
+            currentZ = newZ;
+        } else {
+            // Si no podemos movernos, tomar una dirección alternativa
+            if (dirX != 0) {
+                currentX += dirX;
+            } else if (dirZ != 0) {
+                currentZ += dirZ;
+            } else {
+                break; // No podemos movernos más
+            }
+        }
+        
+        // Evitar bucle infinito
+        static int steps = 0;
+        if (++steps > MAZE_WIDTH + MAZE_HEIGHT) break;
+    }
+}
+
+void ensure_connectivity() {
+    // Verificar si el centro está conectado a la salida
+    int centerX = MAZE_WIDTH / 2;
+    int centerZ = MAZE_HEIGHT / 2;
+    
+    if (!is_connected_to_exit(centerX, centerZ)) {
+        // Si no está conectado, crear un camino de emergencia
+        create_guaranteed_path_to_exit();
+    }
+}
+
+bool is_connected_to_exit(int startX, int startZ) {
+    // Usar flood fill para verificar conectividad
+    bool visited[MAZE_WIDTH][MAZE_HEIGHT];
+    
+    // Inicializar array de visitados
+    for (int x = 0; x < MAZE_WIDTH; x++) {
+        for (int z = 0; z < MAZE_HEIGHT; z++) {
+            visited[x][z] = false;
+        }
+    }
+    
+    // Hacer flood fill desde el punto de inicio
+    flood_fill_connectivity(startX, startZ, visited);
+    
+    // Verificar si la salida fue visitada
+    switch (exit_side) {
+        case 0: // Norte
+            return visited[exit_pos][0];
+        case 1: // Sur
+            return visited[exit_pos][MAZE_HEIGHT - 1];
+        case 2: // Este
+            return visited[MAZE_WIDTH - 1][exit_pos];
+        case 3: // Oeste
+            return visited[0][exit_pos];
+        default:
+            return false;
+    }
+}
+
+void flood_fill_connectivity(int x, int z, bool visited[MAZE_WIDTH][MAZE_HEIGHT]) {
+    // Verificar límites
+    if (x < 0 || x >= MAZE_WIDTH || z < 0 || z >= MAZE_HEIGHT) return;
+    
+    // Si ya fue visitado o es una pared, no continuar
+    if (visited[x][z] || maze[x][z] == 1) return;
+    
+    // Marcar como visitado
+    visited[x][z] = true;
+    
+    // Continuar con las 4 direcciones
+    flood_fill_connectivity(x + 1, z, visited); // Este
+    flood_fill_connectivity(x - 1, z, visited); // Oeste
+    flood_fill_connectivity(x, z + 1, visited); // Sur
+    flood_fill_connectivity(x, z - 1, visited); // Norte
+}
+
 void cleanup_map() {
     // Limpiar recursos del mapa (si los hay)
+    exit_side = -1;
+    exit_pos = -1;
 }
