@@ -5,7 +5,7 @@
 #include <time.h>
 
 // Variables globales del mapa
-int maze[MAZE_HEIGHT][MAZE_WIDTH];
+int maze[MAZE_WIDTH][MAZE_HEIGHT];
 
 void init_map() {
     // Inicializar sistema de mapas
@@ -15,9 +15,9 @@ void init_map() {
 
 void generate_map() {
     // Inicializar todo como paredes
-    for (int y = 0; y < MAZE_HEIGHT; y++) {
-        for (int x = 0; x < MAZE_WIDTH; x++) {
-            maze[y][x] = 1;
+    for (int x = 0; x < MAZE_WIDTH; x++) {
+        for (int z = 0; z < MAZE_HEIGHT; z++) {
+            maze[x][z] = 1;
         }
     }
     
@@ -39,13 +39,13 @@ void generate_map() {
             break;
     }
     
-    // Asegurar que el jugador tenga espacio y conexión (centro del mapa 50x50)
+    // Asegurar que el jugador tenga espacio y conexión (centro del mapa 200x200)
     // Crear un área más grande libre alrededor del jugador
     int centerX = MAZE_WIDTH / 2;
-    int centerY = MAZE_HEIGHT / 2;
-    for (int y = centerY - 3; y <= centerY + 3; y++) {
-        for (int x = centerX - 3; x <= centerX + 3; x++) {
-            maze[y][x] = 0; // Área libre 7x7
+    int centerZ = MAZE_HEIGHT / 2;
+    for (int x = centerX - 5; x <= centerX + 5; x++) {
+        for (int z = centerZ - 5; z <= centerZ + 5; z++) {
+            maze[x][z] = 0; // Área libre 11x11 (más ancha)
         }
     }
     
@@ -57,18 +57,20 @@ void generate_map() {
 }
 
 void generate_classic_maze() {
-    // Crear pasillos principales (laberinto básico)
-    for (int y = 1; y < MAZE_HEIGHT - 1; y += 2) {
-        for (int x = 1; x < MAZE_WIDTH - 1; x++) {
-            maze[y][x] = 0; // Pasillo horizontal
+    // Crear pasillos principales más anchos (laberinto básico)
+    for (int x = 1; x < MAZE_WIDTH - 1; x += 3) {
+        for (int z = 1; z < MAZE_HEIGHT - 1; z++) {
+            maze[x][z] = 0; // Pasillo horizontal
+            if (z < MAZE_HEIGHT - 2) maze[x][z+1] = 0; // Hacer pasillo más ancho
         }
     }
     
-    // Crear pasillos verticales
-    for (int x = 1; x < MAZE_WIDTH - 1; x += 2) {
-        for (int y = 1; y < MAZE_HEIGHT - 1; y++) {
+    // Crear pasillos verticales más anchos
+    for (int z = 1; z < MAZE_HEIGHT - 1; z += 3) {
+        for (int x = 1; x < MAZE_WIDTH - 1; x++) {
             if (rand() % 3 == 0) { // 33% de probabilidad de pasillo vertical
-                maze[y][x] = 0;
+                maze[x][z] = 0;
+                if (x < MAZE_WIDTH - 2) maze[x+1][z] = 0; // Hacer pasillo más ancho
             }
         }
     }
@@ -78,15 +80,15 @@ void generate_room_maze() {
     // Crear habitaciones de diferentes tamaños
     for (int room = 0; room < 8; room++) {
         int roomX = rand() % (MAZE_WIDTH - 6) + 2;
-        int roomY = rand() % (MAZE_HEIGHT - 6) + 2;
+        int roomZ = rand() % (MAZE_HEIGHT - 6) + 2;
         int roomW = rand() % 4 + 3; // 3-6 de ancho
         int roomH = rand() % 4 + 3; // 3-6 de alto
         
         // Asegurar que la habitación quepa
-        if (roomX + roomW < MAZE_WIDTH - 1 && roomY + roomH < MAZE_HEIGHT - 1) {
-            for (int y = roomY; y < roomY + roomH; y++) {
-                for (int x = roomX; x < roomX + roomW; x++) {
-                    maze[y][x] = 0;
+        if (roomX + roomW < MAZE_WIDTH - 1 && roomZ + roomH < MAZE_HEIGHT - 1) {
+            for (int x = roomX; x < roomX + roomW; x++) {
+                for (int z = roomZ; z < roomZ + roomH; z++) {
+                    maze[x][z] = 0;
                 }
             }
         }
@@ -95,33 +97,33 @@ void generate_room_maze() {
     // Conectar habitaciones con pasillos
     for (int i = 0; i < 15; i++) {
         int x = rand() % (MAZE_WIDTH - 2) + 1;
-        int y = rand() % (MAZE_HEIGHT - 2) + 1;
-        maze[y][x] = 0;
+        int z = rand() % (MAZE_HEIGHT - 2) + 1;
+        maze[x][z] = 0;
     }
 }
 
 void generate_winding_corridors() {
     // Crear pasillos serpenteantes
     int startX = MAZE_WIDTH / 2;
-    int startY = MAZE_HEIGHT / 2;
+    int startZ = MAZE_HEIGHT / 2;
     int currentX = startX;
-    int currentY = startY;
+    int currentZ = startZ;
     
     for (int steps = 0; steps < 200; steps++) {
-        maze[currentY][currentX] = 0;
+        maze[currentX][currentZ] = 0;
         
         int direction = rand() % 4;
         switch (direction) {
-            case 0: // Norte
-                if (currentY > 1) currentY--;
+            case 0: // Norte (Z negativo)
+                if (currentZ > 1) currentZ--;
                 break;
-            case 1: // Sur
-                if (currentY < MAZE_HEIGHT - 2) currentY++;
+            case 1: // Sur (Z positivo)
+                if (currentZ < MAZE_HEIGHT - 2) currentZ++;
                 break;
-            case 2: // Este
+            case 2: // Este (X positivo)
                 if (currentX < MAZE_WIDTH - 2) currentX++;
                 break;
-            case 3: // Oeste
+            case 3: // Oeste (X negativo)
                 if (currentX > 1) currentX--;
                 break;
         }
@@ -130,25 +132,25 @@ void generate_winding_corridors() {
 
 void generate_backrooms_pattern() {
     // Patrón más caótico estilo backrooms
-    for (int y = 1; y < MAZE_HEIGHT - 1; y++) {
-        for (int x = 1; x < MAZE_WIDTH - 1; x++) {
+    for (int x = 1; x < MAZE_WIDTH - 1; x++) {
+        for (int z = 1; z < MAZE_HEIGHT - 1; z++) {
             if (rand() % 3 == 0) { // 33% de probabilidad de espacio libre
-                maze[y][x] = 0;
+                maze[x][z] = 0;
             }
         }
     }
     
     // Crear columnas aleatorias variadas para soledad
-    for (int y = 2; y < MAZE_HEIGHT - 2; y += 2) {
-        for (int x = 2; x < MAZE_WIDTH - 2; x += 2) {
+    for (int x = 2; x < MAZE_WIDTH - 2; x += 2) {
+        for (int z = 2; z < MAZE_HEIGHT - 2; z += 2) {
             if (rand() % 4 == 0) { // 25% de probabilidad de columna
-                maze[y][x] = 1;
+                maze[x][z] = 1;
                 
                 // A veces crear columnas más gruesas (2x2)
-                if (rand() % 3 == 0 && x < MAZE_WIDTH - 3 && y < MAZE_HEIGHT - 3) {
-                    maze[y+1][x] = 1;
-                    maze[y][x+1] = 1;
-                    maze[y+1][x+1] = 1;
+                if (rand() % 3 == 0 && x < MAZE_WIDTH - 3 && z < MAZE_HEIGHT - 3) {
+                    maze[x+1][z] = 1;
+                    maze[x][z+1] = 1;
+                    maze[x+1][z+1] = 1;
                 }
             }
         }
@@ -161,29 +163,29 @@ void ensure_single_exit() {
     int exit_pos = 0;
     
     switch (exit_side) {
-        case 0: // Norte
+        case 0: // Norte (Z=0)
             exit_pos = rand() % (MAZE_WIDTH - 4) + 2; // Evitar esquinas
-            maze[0][exit_pos] = 0;
-            maze[1][exit_pos] = 0;
-            maze[2][exit_pos] = 0; // Hacer la salida más ancha
-            break;
-        case 1: // Sur
-            exit_pos = rand() % (MAZE_WIDTH - 4) + 2;
-            maze[MAZE_HEIGHT - 1][exit_pos] = 0;
-            maze[MAZE_HEIGHT - 2][exit_pos] = 0;
-            maze[MAZE_HEIGHT - 3][exit_pos] = 0;
-            break;
-        case 2: // Este
-            exit_pos = rand() % (MAZE_HEIGHT - 4) + 2;
-            maze[exit_pos][MAZE_WIDTH - 1] = 0;
-            maze[exit_pos][MAZE_WIDTH - 2] = 0;
-            maze[exit_pos][MAZE_WIDTH - 3] = 0;
-            break;
-        case 3: // Oeste
-            exit_pos = rand() % (MAZE_HEIGHT - 4) + 2;
             maze[exit_pos][0] = 0;
             maze[exit_pos][1] = 0;
-            maze[exit_pos][2] = 0;
+            maze[exit_pos][2] = 0; // Hacer la salida más ancha
+            break;
+        case 1: // Sur (Z=MAZE_HEIGHT-1)
+            exit_pos = rand() % (MAZE_WIDTH - 4) + 2;
+            maze[exit_pos][MAZE_HEIGHT - 1] = 0;
+            maze[exit_pos][MAZE_HEIGHT - 2] = 0;
+            maze[exit_pos][MAZE_HEIGHT - 3] = 0;
+            break;
+        case 2: // Este (X=MAZE_WIDTH-1)
+            exit_pos = rand() % (MAZE_HEIGHT - 4) + 2;
+            maze[MAZE_WIDTH - 1][exit_pos] = 0;
+            maze[MAZE_WIDTH - 2][exit_pos] = 0;
+            maze[MAZE_WIDTH - 3][exit_pos] = 0;
+            break;
+        case 3: // Oeste (X=0)
+            exit_pos = rand() % (MAZE_HEIGHT - 4) + 2;
+            maze[0][exit_pos] = 0;
+            maze[1][exit_pos] = 0;
+            maze[2][exit_pos] = 0;
             break;
     }
     
@@ -192,19 +194,19 @@ void ensure_single_exit() {
 }
 
 void create_main_corridors(int exits[4]) {
-    // Pasillo principal norte-sur
-    for (int y = 1; y < MAZE_HEIGHT - 1; y++) {
+    // Pasillo principal norte-sur (Z)
+    for (int z = 1; z < MAZE_HEIGHT - 1; z++) {
         if (rand() % 3 == 0) { // 33% de probabilidad
-            maze[y][exits[0]] = 0; // Conectar con salida norte
-            maze[y][exits[1]] = 0; // Conectar con salida sur
+            maze[exits[0]][z] = 0; // Conectar con salida norte
+            maze[exits[1]][z] = 0; // Conectar con salida sur
         }
     }
     
-    // Pasillo principal este-oeste
+    // Pasillo principal este-oeste (X)
     for (int x = 1; x < MAZE_WIDTH - 1; x++) {
         if (rand() % 3 == 0) { // 33% de probabilidad
-            maze[exits[2]][x] = 0; // Conectar con salida este
-            maze[exits[3]][x] = 0; // Conectar con salida oeste
+            maze[x][exits[2]] = 0; // Conectar con salida este
+            maze[x][exits[3]] = 0; // Conectar con salida oeste
         }
     }
 }
@@ -212,26 +214,26 @@ void create_main_corridors(int exits[4]) {
 void connect_exits_to_center(int exits[4]) {
     // Conectar norte al centro
     for (int i = 0; i < 3; i++) {
-        if (exits[0] > 1) maze[1][exits[0] - 1] = 0;
-        if (exits[0] < MAZE_WIDTH - 2) maze[1][exits[0] + 1] = 0;
+        if (exits[0] > 1) maze[exits[0] - 1][1] = 0;
+        if (exits[0] < MAZE_WIDTH - 2) maze[exits[0] + 1][1] = 0;
     }
     
     // Conectar sur al centro
     for (int i = 0; i < 3; i++) {
-        if (exits[1] > 1) maze[MAZE_HEIGHT - 2][exits[1] - 1] = 0;
-        if (exits[1] < MAZE_WIDTH - 2) maze[MAZE_HEIGHT - 2][exits[1] + 1] = 0;
+        if (exits[1] > 1) maze[exits[1] - 1][MAZE_HEIGHT - 2] = 0;
+        if (exits[1] < MAZE_WIDTH - 2) maze[exits[1] + 1][MAZE_HEIGHT - 2] = 0;
     }
     
     // Conectar este al centro
     for (int i = 0; i < 3; i++) {
-        if (exits[2] > 1) maze[exits[2] - 1][MAZE_WIDTH - 2] = 0;
-        if (exits[2] < MAZE_HEIGHT - 2) maze[exits[2] + 1][MAZE_WIDTH - 2] = 0;
+        if (exits[2] > 1) maze[MAZE_WIDTH - 2][exits[2] - 1] = 0;
+        if (exits[2] < MAZE_HEIGHT - 2) maze[MAZE_WIDTH - 2][exits[2] + 1] = 0;
     }
     
     // Conectar oeste al centro
     for (int i = 0; i < 3; i++) {
-        if (exits[3] > 1) maze[exits[3] - 1][1] = 0;
-        if (exits[3] < MAZE_HEIGHT - 2) maze[exits[3] + 1][1] = 0;
+        if (exits[3] > 1) maze[1][exits[3] - 1] = 0;
+        if (exits[3] < MAZE_HEIGHT - 2) maze[1][exits[3] + 1] = 0;
     }
     
     // Crear pasillos principales hacia el centro desde cada salida
@@ -240,60 +242,60 @@ void connect_exits_to_center(int exits[4]) {
 
 void create_complex_path_to_exit(int exit_side, int exit_pos) {
     int centerX = MAZE_WIDTH / 2;
-    int centerY = MAZE_HEIGHT / 2;
+    int centerZ = MAZE_HEIGHT / 2;
     
     // Crear un camino serpenteante y complejo desde el centro hacia la salida
     int currentX = centerX;
-    int currentY = centerY;
-    int targetX = 0, targetY = 0; // Inicializar las variables
+    int currentZ = centerZ;
+    int targetX = 0, targetZ = 0; // Inicializar las variables
     
     // Determinar la dirección hacia la salida
     switch (exit_side) {
-        case 0: // Norte
+        case 0: // Norte (Z=0)
             targetX = exit_pos;
-            targetY = 0;
+            targetZ = 0;
             break;
-        case 1: // Sur
+        case 1: // Sur (Z=MAZE_HEIGHT-1)
             targetX = exit_pos;
-            targetY = MAZE_HEIGHT - 1;
+            targetZ = MAZE_HEIGHT - 1;
             break;
-        case 2: // Este
+        case 2: // Este (X=MAZE_WIDTH-1)
             targetX = MAZE_WIDTH - 1;
-            targetY = exit_pos;
+            targetZ = exit_pos;
             break;
-        case 3: // Oeste
+        case 3: // Oeste (X=0)
             targetX = 0;
-            targetY = exit_pos;
+            targetZ = exit_pos;
             break;
     }
     
     // Crear camino principal con desvíos y callejones sin salida
     for (int step = 0; step < 200; step++) {
         // Asegurar que el camino actual esté libre
-        maze[currentY][currentX] = 0;
+        maze[currentX][currentZ] = 0;
         
         // Calcular dirección hacia el objetivo
         int dirX = (targetX > currentX) ? 1 : (targetX < currentX) ? -1 : 0;
-        int dirY = (targetY > currentY) ? 1 : (targetY < currentY) ? -1 : 0;
+        int dirZ = (targetZ > currentZ) ? 1 : (targetZ < currentZ) ? -1 : 0;
         
         // A veces tomar un desvío aleatorio para hacer el camino más complejo
         if (rand() % 4 == 0) {
             dirX = (rand() % 3) - 1; // -1, 0, o 1
-            dirY = (rand() % 3) - 1;
+            dirZ = (rand() % 3) - 1;
         }
         
         // Mover hacia la dirección calculada
         int newX = currentX + dirX;
-        int newY = currentY + dirY;
+        int newZ = currentZ + dirZ;
         
         // Verificar límites
-        if (newX > 0 && newX < MAZE_WIDTH - 1 && newY > 0 && newY < MAZE_HEIGHT - 1) {
+        if (newX > 0 && newX < MAZE_WIDTH - 1 && newZ > 0 && newZ < MAZE_HEIGHT - 1) {
             currentX = newX;
-            currentY = newY;
+            currentZ = newZ;
         }
         
         // Si llegamos cerca del objetivo, terminar
-        if (abs(currentX - targetX) <= 2 && abs(currentY - targetY) <= 2) {
+        if (abs(currentX - targetX) <= 2 && abs(currentZ - targetZ) <= 2) {
             break;
         }
     }
@@ -306,25 +308,25 @@ void create_dead_ends() {
     // Crear callejones sin salida para hacer el laberinto más desafiante
     for (int i = 0; i < 30; i++) {
         int startX = rand() % (MAZE_WIDTH - 4) + 2;
-        int startY = rand() % (MAZE_HEIGHT - 4) + 2;
+        int startZ = rand() % (MAZE_HEIGHT - 4) + 2;
         
-        if (maze[startY][startX] == 0) { // Empezar desde un pasillo existente
+        if (maze[startX][startZ] == 0) { // Empezar desde un pasillo existente
             int length = rand() % 8 + 3; // Longitud del callejón 3-10
             int direction = rand() % 4;
             
             for (int j = 0; j < length; j++) {
                 switch (direction) {
-                    case 0: // Norte
-                        if (startY - j > 0) maze[startY - j][startX] = 0;
+                    case 0: // Norte (Z negativo)
+                        if (startZ - j > 0) maze[startX][startZ - j] = 0;
                         break;
-                    case 1: // Sur
-                        if (startY + j < MAZE_HEIGHT - 1) maze[startY + j][startX] = 0;
+                    case 1: // Sur (Z positivo)
+                        if (startZ + j < MAZE_HEIGHT - 1) maze[startX][startZ + j] = 0;
                         break;
-                    case 2: // Este
-                        if (startX + j < MAZE_WIDTH - 1) maze[startY][startX + j] = 0;
+                    case 2: // Este (X positivo)
+                        if (startX + j < MAZE_WIDTH - 1) maze[startX + j][startZ] = 0;
                         break;
-                    case 3: // Oeste
-                        if (startX - j > 0) maze[startY][startX - j] = 0;
+                    case 3: // Oeste (X negativo)
+                        if (startX - j > 0) maze[startX - j][startZ] = 0;
                         break;
                 }
             }
@@ -336,11 +338,11 @@ void add_decorative_elements() {
     // Añadir elementos decorativos aleatorios para ambiente backrooms
     for (int i = 0; i < 25; i++) {
         int x = rand() % (MAZE_WIDTH - 2) + 1;
-        int y = rand() % (MAZE_HEIGHT - 2) + 1;
-        if (maze[y][x] == 0) { // Solo en espacios vacíos
+        int z = rand() % (MAZE_HEIGHT - 2) + 1;
+        if (maze[x][z] == 0) { // Solo en espacios vacíos
             // Crear pequeñas estructuras decorativas
             if (rand() % 3 == 0) {
-                maze[y][x] = 2; // Marcar como elemento decorativo
+                maze[x][z] = 2; // Marcar como elemento decorativo
             }
         }
     }
@@ -350,7 +352,7 @@ bool is_wall(int x, int z) {
     if (x < 0 || x >= MAZE_WIDTH || z < 0 || z >= MAZE_HEIGHT) {
         return true; // Fuera del mapa = pared
     }
-    return maze[z][x] == 1;
+    return maze[x][z] == 1;
 }
 
 void cleanup_map() {

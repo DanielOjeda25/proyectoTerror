@@ -7,9 +7,10 @@
 // Constantes del mapa
 #define MAZE_WIDTH 200
 #define MAZE_HEIGHT 200
+#define MAZE_LEVELS 20  // Número de niveles de altura (mucho más alto)
 
 // Variables globales del mapa
-extern int maze[MAZE_HEIGHT][MAZE_WIDTH];
+extern int maze[MAZE_WIDTH][MAZE_HEIGHT];
 
 // Funciones del mapa
 void init_map();

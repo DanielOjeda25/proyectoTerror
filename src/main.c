@@ -26,7 +26,7 @@ void setup_opengl() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)windowWidth / (float)windowHeight;
-    gluPerspective(60.0f, aspect, 0.1f, 100.0f);  // FOV 60°, near 0.1, far 100
+    gluPerspective(60.0f, aspect, 0.1f, 1000.0f);  // FOV 60°, near 0.1, far 1000
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
@@ -45,7 +45,7 @@ void window_size_callback(GLFWwindow* window, int width, int height) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)width / (float)height;
-    gluPerspective(60.0f, aspect, 0.1f, 100.0f);
+    gluPerspective(60.0f, aspect, 0.1f, 1000.0f);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -87,11 +87,11 @@ int main() {
     printf("WASD - Mover (adelante/atrás/izquierda/derecha)\n");
     printf("Flechas - Rotar cámara\n");
     printf("Mouse - Rotar cámara 3D (click izquierdo para activar)\n");
-    printf("ESPACIO - Saltar (próximamente)\n");
+    printf("ESPACIO - Saltar\n");
     printf("SHIFT - Agacharse (próximamente)\n");
     printf("ESC - Liberar mouse / Salir\n");
     printf("Posición inicial: (%.1f, %.1f, %.1f)\n", player.x, player.y, player.z);
-    printf("Escala 3D: 200x200 - Altura 3 unidades (MAPA MASIVO)\n");
+    printf("Escala 3D: 200x200x8 - Altura %d unidades (MAPA MASIVO CON ALTURA)\n", MAZE_LEVELS);
     printf("Luz: Rango %.1f unidades - Niebla: %.1f-%.1f unidades\n", LIGHT_RANGE, FOG_START_DISTANCE, FOG_END_DISTANCE);
     printf("Carga progresiva: Solo se renderiza lo que está iluminado\n");
     printf("Sistema modular inicializado\n");

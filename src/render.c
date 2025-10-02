@@ -47,14 +47,29 @@ void setup_camera() {
     float camZ = player.z;
     
     // Calcular dirección de la cámara basada en yaw y pitch
+    // Sistema estándar: yaw=0 mira hacia X positivo (adelante)
     float lookX = cos(player.yaw) * cos(player.pitch);
     float lookY = sin(player.pitch);
     float lookZ = sin(player.yaw) * cos(player.pitch);
     
-    // Configurar la cámara
+    // Normalizar el vector de dirección para evitar drift
+    float length = sqrt(lookX * lookX + lookY * lookY + lookZ * lookZ);
+    if (length > 0.0f) {
+        lookX /= length;
+        lookY /= length;
+        lookZ /= length;
+    }
+    
+    // Calcular vector "arriba" que rota con la cámara para evitar inclinación
+    // El vector arriba siempre apunta hacia Y positivo, independientemente de la rotación
+    float upX = 0.0f;
+    float upY = 1.0f;
+    float upZ = 0.0f;
+    
+    // Configurar la cámara con vector arriba fijo para evitar drift
     gluLookAt(camX, camY, camZ,                    // Posición de la cámara
               camX + lookX, camY + lookY, camZ + lookZ,  // Punto al que mira
-              0.0f, 1.0f, 0.0f);                   // Vector "arriba"
+              upX, upY, upZ);                      // Vector "arriba" fijo
 }
 
 void draw_cube(float x, float y, float z, float size) {
@@ -118,6 +133,14 @@ void draw_cube(float x, float y, float z, float size) {
     glEnd();
 }
 
+void draw_tall_wall(int x, int z, int levels) {
+    // Dibujar una pared alta compuesta por múltiples cubos apilados
+    for (int level = 0; level < levels; level++) {
+        float y = level + 0.5f; // Altura de cada nivel
+        draw_cube(x, y, z, 1.0f);
+    }
+}
+
 void draw_floor() {
     // Configurar material para el suelo
     GLfloat ambient[] = {0.1f, 0.1f, 0.1f, 1.0f};
@@ -153,10 +176,11 @@ void draw_ceiling() {
     
     glBegin(GL_QUADS);
     glNormal3f(0.0f, -1.0f, 0.0f); // Normal hacia abajo
-    glVertex3f(-200.0f, 3.0f, -200.0f);
-    glVertex3f(-200.0f, 3.0f, 200.0f);
-    glVertex3f(200.0f, 3.0f, 200.0f);
-    glVertex3f(200.0f, 3.0f, -200.0f);
+    float ceiling_height = MAZE_LEVELS + 0.5f;
+    glVertex3f(-200.0f, ceiling_height, -200.0f);
+    glVertex3f(-200.0f, ceiling_height, 200.0f);
+    glVertex3f(200.0f, ceiling_height, 200.0f);
+    glVertex3f(200.0f, ceiling_height, -200.0f);
     glEnd();
 }
 
@@ -172,27 +196,27 @@ void render_world() {
     draw_ceiling();
     
     // Renderizar el laberinto 3D con carga progresiva basada en la luz
-    for (int y = 0; y < MAZE_HEIGHT; y++) {
-        for (int x = 0; x < MAZE_WIDTH; x++) {
-            if (maze[y][x] == 1) { // Si hay una pared
+    for (int x = 0; x < MAZE_WIDTH; x++) {
+        for (int z = 0; z < MAZE_HEIGHT; z++) {
+            if (maze[x][z] == 1) { // Si hay una pared
                 // Calcular distancia desde el jugador
                 float distance = sqrt((x - player.x) * (x - player.x) + 
-                                     (y - player.z) * (y - player.z));
+                                     (z - player.z) * (z - player.z));
                 
                 // Solo renderizar si está dentro del rango de luz
                 if (distance <= light_range) {
-                    // Dibujar cubo en la posición (x, 0, y) con altura 3
-                    draw_cube(x, 1.5f, y, 1.0f);
+                    // Dibujar pared con gran altura (8 niveles)
+                    draw_tall_wall(x, z, MAZE_LEVELS);
                 }
-            } else if (maze[y][x] == 2) { // Elementos decorativos
+            } else if (maze[x][z] == 2) { // Elementos decorativos
                 // Calcular distancia desde el jugador
                 float distance = sqrt((x - player.x) * (x - player.x) + 
-                                     (y - player.z) * (y - player.z));
+                                     (z - player.z) * (z - player.z));
                 
                 // Solo renderizar si está dentro del rango de luz (más cercano)
                 if (distance <= light_range * 0.8f) {
                     // Dibujar elemento decorativo más pequeño
-                    draw_cube(x, 0.3f, y, 0.2f);
+                    draw_cube(x, 0.3f, z, 0.2f);
                 }
             }
         }

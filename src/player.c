@@ -17,21 +17,30 @@ Player3D player = {0};
 
 void init_player() {
     // Inicializar jugador con valores por defecto
-    // Posición en el centro del mapa 50x50
+    // Posición en el centro del mapa 200x200
     player.x = MAZE_WIDTH / 2.0f;
-    player.y = 0.0f;
+    player.y = 0.1f;  // Ligeramente por encima del suelo para evitar caída
     player.z = MAZE_HEIGHT / 2.0f;
     player.yaw = 0.0f;
     player.pitch = 0.0f;
-    player.height = 1.6f;
-    player.moveSpeed = 0.005f;  // Velocidad muy reducida para experiencia realista
+    player.height = 1.6f;  // Altura del jugador en el nivel más bajo
+    player.moveSpeed = 0.02f;  // Velocidad ajustada para movimiento perceptible
     player.rotSpeed = 0.02f;
-    player.mouseSensitivity = 0.002f;
+    player.mouseSensitivity = 0.001f;  // Sensibilidad más suave y natural
+    
+    // Inicializar sistema de física
+    player.velocityY = 0.0f;
+    player.isGrounded = true;
+    player.canJump = true;
+    player.jumpForce = 0.15f;
+    player.gravity = -0.008f;
 }
 
 void update_player() {
     // Actualizar posición del jugador basado en input
     handle_movement();
+    handle_jumping();
+    apply_gravity();
 }
 
 void handle_movement() {
@@ -40,29 +49,36 @@ void handle_movement() {
     bool moved = false;
     
     // Calcular dirección de movimiento basada en yaw (rotación horizontal)
+    // Sistema de coordenadas estándar: yaw=0 mira hacia X positivo (adelante)
+    // Adelante: hacia X positivo
     float forwardX = cos(player.yaw) * player.moveSpeed;
     float forwardZ = sin(player.yaw) * player.moveSpeed;
-    float rightX = cos(player.yaw + M_PI/2) * player.moveSpeed;
-    float rightZ = sin(player.yaw + M_PI/2) * player.moveSpeed;
+    // Derecha: perpendicular a la dirección de la cámara (hacia Z positivo)
+    float rightX = -sin(player.yaw) * player.moveSpeed;
+    float rightZ = cos(player.yaw) * player.moveSpeed;
     
     // Verificar todas las teclas de movimiento presionadas
     if (is_key_pressed(GLFW_KEY_W)) {
+        // W: Adelante (hacia X positivo - estándar)
         newX += forwardX;
         newZ += forwardZ;
         moved = true;
     }
     if (is_key_pressed(GLFW_KEY_S)) {
+        // S: Atrás (hacia X negativo - estándar)
         newX -= forwardX;
         newZ -= forwardZ;
         moved = true;
     }
     if (is_key_pressed(GLFW_KEY_A)) {
-        newX -= rightX;  // A va a la izquierda
+        // A: Izquierda (strafe left - hacia Z negativo - estándar)
+        newX -= rightX;
         newZ -= rightZ;
         moved = true;
     }
     if (is_key_pressed(GLFW_KEY_D)) {
-        newX += rightX;  // D va a la derecha
+        // D: Derecha (strafe right - hacia Z positivo - estándar)
+        newX += rightX;
         newZ += rightZ;
         moved = true;
     }
@@ -92,13 +108,14 @@ void handle_movement() {
 }
 
 void handle_rotation(float deltaX, float deltaY) {
-    // Rotación horizontal (yaw)
+    // Rotación horizontal (yaw) - estándar: mouse derecha = yaw positivo
     player.yaw += deltaX * player.mouseSensitivity;
     
-    // Rotación vertical (pitch) con límites
-    player.pitch -= deltaY * player.mouseSensitivity;
-    if (player.pitch > M_PI/2) player.pitch = M_PI/2;
-    if (player.pitch < -M_PI/2) player.pitch = -M_PI/2;
+    // Rotación vertical (pitch) con límites - estándar: mouse arriba = pitch positivo
+    player.pitch += deltaY * player.mouseSensitivity;
+    // Límites más estrictos para evitar problemas de renderizado
+    if (player.pitch > M_PI/2 - 0.1f) player.pitch = M_PI/2 - 0.1f;  // Evitar mirar exactamente hacia arriba
+    if (player.pitch < -M_PI/2 + 0.1f) player.pitch = -M_PI/2 + 0.1f;  // Evitar mirar exactamente hacia abajo
 }
 
 bool check_collision(float newX, float newZ) {
@@ -106,8 +123,11 @@ bool check_collision(float newX, float newZ) {
     float playerRadius = 0.2f;
     
     // Verificar solo el centro del jugador y puntos cardinales
-    // Centro
-    if (is_wall((int)(newX + 0.5f), (int)(newZ + 0.5f))) {
+    // Centro - convertir coordenadas del mundo a coordenadas del mapa
+    int mapX = (int)(newX + 0.5f);
+    int mapZ = (int)(newZ + 0.5f);
+    
+    if (is_wall(mapX, mapZ)) {
         return true;
     }
     
@@ -126,6 +146,46 @@ bool check_collision(float newX, float newZ) {
     }
     
     return false;
+}
+
+void handle_jumping() {
+    // Verificar si se presiona la tecla de salto (ESPACIO)
+    if (is_key_pressed(GLFW_KEY_SPACE) && player.isGrounded && player.canJump) {
+        player.velocityY = player.jumpForce;
+        player.isGrounded = false;
+        player.canJump = false;
+    }
+}
+
+void apply_gravity() {
+    // Aplicar gravedad
+    player.velocityY += player.gravity;
+    
+    // Calcular nueva posición Y
+    float newY = player.y + player.velocityY;
+    
+    // Verificar colisión con el suelo
+    if (newY <= 0.0f) {
+        // El jugador toca el suelo
+        player.y = 0.0f;
+        player.velocityY = 0.0f;
+        player.isGrounded = true;
+        player.canJump = true;
+    } else {
+        // El jugador está en el aire
+        player.y = newY;
+        player.isGrounded = false;
+    }
+}
+
+bool check_ground_collision(float newX, float newY, float newZ) {
+    // Verificar si hay colisión con el suelo o paredes
+    if (newY <= 0.0f) {
+        return true; // Colisión con el suelo
+    }
+    
+    // Verificar colisión con paredes (solo en X y Z)
+    return check_collision(newX, newZ);
 }
 
 void cleanup_player() {

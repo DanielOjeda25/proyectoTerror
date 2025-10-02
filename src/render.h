@@ -20,6 +20,7 @@ void init_renderer();
 void setup_camera();
 void render_world();
 void draw_cube(float x, float y, float z, float size);
+void draw_tall_wall(int x, int z, int levels);
 void draw_floor();
 void draw_ceiling();
 void setup_fog();

@@ -80,6 +80,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 player.pitch -= player.rotSpeed;
                 if (player.pitch < -M_PI/2) player.pitch = -M_PI/2;
                 break;
+            case GLFW_KEY_W:
+            case GLFW_KEY_A:
+            case GLFW_KEY_S:
+            case GLFW_KEY_D:
+                // Las teclas de movimiento se manejan en handle_movement()
+                // Solo actualizamos el estado de la tecla aquí
+                break;
+            case GLFW_KEY_SPACE:
+                // El salto se maneja en handle_jumping()
+                break;
             case GLFW_KEY_ESCAPE:
                 if (mouseCaptured) {
                     mouseCaptured = false;
