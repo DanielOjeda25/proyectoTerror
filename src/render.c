@@ -163,11 +163,11 @@ void draw_floor() {
 }
 
 void draw_ceiling() {
-    // Configurar material para el techo
-    GLfloat ambient[] = {0.05f, 0.05f, 0.05f, 1.0f};
-    GLfloat diffuse[] = {0.2f, 0.2f, 0.2f, 1.0f};
-    GLfloat specular[] = {0.02f, 0.02f, 0.02f, 1.0f};
-    GLfloat shininess[] = {2.0f};
+    // Configurar material para el techo (más alto para que sea menos visible)
+    GLfloat ambient[] = {0.02f, 0.02f, 0.02f, 1.0f};
+    GLfloat diffuse[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat specular[] = {0.01f, 0.01f, 0.01f, 1.0f};
+    GLfloat shininess[] = {1.0f};
     
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
@@ -176,7 +176,7 @@ void draw_ceiling() {
     
     glBegin(GL_QUADS);
     glNormal3f(0.0f, -1.0f, 0.0f); // Normal hacia abajo
-    float ceiling_height = MAZE_LEVELS + 0.5f;
+    float ceiling_height = MAZE_LEVELS + 2.0f; // Techo más alto
     glVertex3f(-200.0f, ceiling_height, -200.0f);
     glVertex3f(-200.0f, ceiling_height, 200.0f);
     glVertex3f(200.0f, ceiling_height, 200.0f);
@@ -224,15 +224,15 @@ void render_world() {
 }
 
 void setup_fog() {
-    // Configurar niebla para crear ambiente de backrooms
+    // Configurar niebla para crear ambiente de backrooms infinito
     glEnable(GL_FOG);
-    glFogi(GL_FOG_MODE, GL_LINEAR);
-    glFogf(GL_FOG_START, fog_start);
-    glFogf(GL_FOG_END, fog_end);
-    glFogf(GL_FOG_DENSITY, fog_density);
+    glFogi(GL_FOG_MODE, GL_EXP2); // Usar niebla exponencial para efecto más suave
+    glFogf(GL_FOG_DENSITY, 0.015f); // Densidad mucho más alta para ocultar completamente el techo
+    glFogf(GL_FOG_START, 0.0f);
+    glFogf(GL_FOG_END, 1.0f);
     
-    // Color de la niebla (amarillo verdoso para backrooms)
-    GLfloat fogColor[4] = {0.1f, 0.1f, 0.05f, 1.0f};
+    // Color de la niebla muy denso para ocultar completamente el techo
+    GLfloat fogColor[4] = {0.02f, 0.02f, 0.01f, 1.0f}; // Muy oscuro para ocultar completamente el techo
     glFogfv(GL_FOG_COLOR, fogColor);
 }
 

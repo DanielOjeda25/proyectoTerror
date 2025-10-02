@@ -23,7 +23,7 @@ void init_player() {
     player.z = MAZE_HEIGHT / 2.0f;
     player.yaw = 0.0f;
     player.pitch = 0.0f;
-    player.height = 1.6f;  // Altura del jugador en el nivel más bajo
+    player.height = 1.8f;  // Altura del jugador 1.80m
     player.moveSpeed = 0.02f;  // Velocidad ajustada para movimiento perceptible
     player.rotSpeed = 0.02f;
     player.mouseSensitivity = 0.001f;  // Sensibilidad más suave y natural
@@ -34,10 +34,18 @@ void init_player() {
     player.canJump = true;
     player.jumpForce = 0.15f;
     player.gravity = -0.008f;
+    
+    // Inicializar sistema de sprint
+    player.normalSpeed = 0.02f;
+    player.sprintSpeed = 0.08f;  // 4x velocidad para sensación real de correr
+    player.sprintDuration = 0.0f;
+    player.sprintCooldown = 0.0f;
+    player.isSprinting = false;
 }
 
 void update_player() {
     // Actualizar posición del jugador basado en input
+    handle_sprinting();
     handle_movement();
     handle_jumping();
     apply_gravity();
@@ -50,12 +58,15 @@ void handle_movement() {
     
     // Calcular dirección de movimiento basada en yaw (rotación horizontal)
     // Sistema de coordenadas estándar: yaw=0 mira hacia X positivo (adelante)
+    // Usar la velocidad actual (normal o sprint)
+    float currentSpeed = player.isSprinting ? player.sprintSpeed : player.normalSpeed;
+    
     // Adelante: hacia X positivo
-    float forwardX = cos(player.yaw) * player.moveSpeed;
-    float forwardZ = sin(player.yaw) * player.moveSpeed;
+    float forwardX = cos(player.yaw) * currentSpeed;
+    float forwardZ = sin(player.yaw) * currentSpeed;
     // Derecha: perpendicular a la dirección de la cámara (hacia Z positivo)
-    float rightX = -sin(player.yaw) * player.moveSpeed;
-    float rightZ = cos(player.yaw) * player.moveSpeed;
+    float rightX = -sin(player.yaw) * currentSpeed;
+    float rightZ = cos(player.yaw) * currentSpeed;
     
     // Verificar todas las teclas de movimiento presionadas
     if (is_key_pressed(GLFW_KEY_W)) {
@@ -146,6 +157,31 @@ bool check_collision(float newX, float newZ) {
     }
     
     return false;
+}
+
+void handle_sprinting() {
+    // Verificar si se presiona la tecla de sprint (SHIFT)
+    if (is_key_pressed(GLFW_KEY_LEFT_SHIFT) && player.sprintCooldown <= 0.0f) {
+        if (!player.isSprinting) {
+            player.isSprinting = true;
+            player.sprintDuration = 1.5f; // 1.5 segundos de sprint
+        }
+    }
+    
+    // Actualizar duración del sprint
+    if (player.isSprinting) {
+        player.sprintDuration -= 0.016f; // Aproximadamente 60 FPS
+        
+        if (player.sprintDuration <= 0.0f) {
+            player.isSprinting = false;
+            player.sprintCooldown = 5.0f; // 5 segundos de cooldown
+        }
+    }
+    
+    // Actualizar cooldown
+    if (player.sprintCooldown > 0.0f) {
+        player.sprintCooldown -= 0.016f;
+    }
 }
 
 void handle_jumping() {

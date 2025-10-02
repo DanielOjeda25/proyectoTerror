@@ -26,7 +26,7 @@ void setup_opengl() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)windowWidth / (float)windowHeight;
-    gluPerspective(60.0f, aspect, 0.1f, 1000.0f);  // FOV 60°, near 0.1, far 1000
+    gluPerspective(90.0f, aspect, 0.1f, 1000.0f);  // FOV 90°, near 0.1, far 1000
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
@@ -45,7 +45,7 @@ void window_size_callback(GLFWwindow* window, int width, int height) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)width / (float)height;
-    gluPerspective(60.0f, aspect, 0.1f, 1000.0f);
+    gluPerspective(90.0f, aspect, 0.1f, 1000.0f);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -56,13 +56,20 @@ int main() {
         return -1;
     }
     
-    // Crear ventana
-    window = glfwCreateWindow(windowWidth, windowHeight, "Deeper - Laberinto 3D", NULL, NULL);
+    // Crear ventana en pantalla completa
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    
+    window = glfwCreateWindow(mode->width, mode->height, "Deeper - Laberinto 3D", monitor, NULL);
     if (!window) {
         printf("No se pudo crear la ventana\n");
         glfwTerminate();
         return -1;
     }
+    
+    // Actualizar dimensiones para pantalla completa
+    windowWidth = mode->width;
+    windowHeight = mode->height;
     
     glfwMakeContextCurrent(window);
     glfwSetWindowSizeCallback(window, window_size_callback);
