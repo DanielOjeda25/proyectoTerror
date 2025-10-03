@@ -20,14 +20,20 @@ void init_enemy() {
     // Inicializar enemigo en una posición aleatoria lejos del jugador
     srand((unsigned int)time(NULL));
     
-    enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
-    enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
-    
-    // Asegurar que no esté muy cerca del jugador
-    while (sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
-                (enemy.z - player.z) * (enemy.z - player.z)) < 30.0f) {
+    int attempts = 0;
+    do {
         enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
         enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
+        attempts++;
+    } while ((sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
+                   (enemy.z - player.z) * (enemy.z - player.z)) < 30.0f ||
+             is_wall((int)enemy.x, (int)enemy.z)) && attempts < 100);
+    
+    // Si no se encontró una posición válida después de 100 intentos, usar posición por defecto
+    if (attempts >= 100) {
+        enemy.x = MAZE_WIDTH / 2.0f;
+        enemy.z = MAZE_HEIGHT / 2.0f;
+        printf("ADVERTENCIA: Enemigo colocado en posición por defecto\n");
     }
     
     enemy.target_x = enemy.x;
@@ -136,17 +142,22 @@ void update_enemy() {
     if (enemy.is_hunting) {
         // Modo caza: teletransportarse cerca del jugador
         if (enemy.teleport_cooldown <= 0) {
-            float angle = (rand() % 360) * M_PI / 180.0f;
-            float distance = (rand() % 8) + 3; // Entre 3 y 11 unidades (más cerca)
-            
-            enemy.x = player.x + cos(angle) * distance;
-            enemy.z = player.z + sin(angle) * distance;
-            
-            // Asegurar que esté dentro del mapa
-            if (enemy.x < 5) enemy.x = 5;
-            if (enemy.x > MAZE_WIDTH - 5) enemy.x = MAZE_WIDTH - 5;
-            if (enemy.z < 5) enemy.z = 5;
-            if (enemy.z > MAZE_HEIGHT - 5) enemy.z = MAZE_HEIGHT - 5;
+            int attempts = 0;
+            do {
+                float angle = (rand() % 360) * M_PI / 180.0f;
+                float distance = (rand() % 8) + 3; // Entre 3 y 11 unidades (más cerca)
+                
+                enemy.x = player.x + cos(angle) * distance;
+                enemy.z = player.z + sin(angle) * distance;
+                
+                // Asegurar que esté dentro del mapa
+                if (enemy.x < 5) enemy.x = 5;
+                if (enemy.x > MAZE_WIDTH - 5) enemy.x = MAZE_WIDTH - 5;
+                if (enemy.z < 5) enemy.z = 5;
+                if (enemy.z > MAZE_HEIGHT - 5) enemy.z = MAZE_HEIGHT - 5;
+                
+                attempts++;
+            } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 20);
             
             enemy.teleport_cooldown = 240; // 4 segundos de cooldown
             printf("¡ENEMIGO CAZANDO! Posición: (%.1f, %.1f)\n", enemy.x, enemy.z);
@@ -157,17 +168,22 @@ void update_enemy() {
     } else if (enemy.is_stalking) {
         // Modo acecho: teletransportarse a distancia media
         if (enemy.teleport_cooldown <= 0) {
-            float angle = (rand() % 360) * M_PI / 180.0f;
-            float distance = (rand() % 15) + 10; // Entre 10 y 25 unidades
-            
-            enemy.x = player.x + cos(angle) * distance;
-            enemy.z = player.z + sin(angle) * distance;
-            
-            // Asegurar que esté dentro del mapa
-            if (enemy.x < 5) enemy.x = 5;
-            if (enemy.x > MAZE_WIDTH - 5) enemy.x = MAZE_WIDTH - 5;
-            if (enemy.z < 5) enemy.z = 5;
-            if (enemy.z > MAZE_HEIGHT - 5) enemy.z = MAZE_HEIGHT - 5;
+            int attempts = 0;
+            do {
+                float angle = (rand() % 360) * M_PI / 180.0f;
+                float distance = (rand() % 15) + 10; // Entre 10 y 25 unidades
+                
+                enemy.x = player.x + cos(angle) * distance;
+                enemy.z = player.z + sin(angle) * distance;
+                
+                // Asegurar que esté dentro del mapa
+                if (enemy.x < 5) enemy.x = 5;
+                if (enemy.x > MAZE_WIDTH - 5) enemy.x = MAZE_WIDTH - 5;
+                if (enemy.z < 5) enemy.z = 5;
+                if (enemy.z > MAZE_HEIGHT - 5) enemy.z = MAZE_HEIGHT - 5;
+                
+                attempts++;
+            } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 20);
             
             enemy.teleport_cooldown = 180; // 3 segundos de cooldown
             printf("Enemigo acechando en (%.1f, %.1f)\n", enemy.x, enemy.z);
@@ -181,14 +197,12 @@ void update_enemy() {
         // Modo patrulla: teletransportarse aleatoriamente cada 5-10 segundos
         if (enemy.behavior_timer % (rand() % 300 + 300) == 0 && enemy.teleport_cooldown <= 0) {
             // Teletransportarse a posición aleatoria
-            enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
-            enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
-            
-            // Asegurar que no esté en un muro
-            while (maze[(int)enemy.x][(int)enemy.z] == 1) {
+            int attempts = 0;
+            do {
                 enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
                 enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
-            }
+                attempts++;
+            } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 50);
             
             enemy.teleport_cooldown = 120; // 2 segundos de cooldown
             printf("Enemigo patrullando en (%.1f, %.1f)\n", enemy.x, enemy.z);

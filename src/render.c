@@ -20,9 +20,9 @@ extern int windowWidth;
 extern int windowHeight;
 
 // Variables de niebla
-float fog_start = 25.0f;
-float fog_end = 150.0f;
-float fog_density = 0.002f;
+float fog_start = 10.0f;
+float fog_end = 50.0f;
+float fog_density = 0.015f;
 
 // Variables de iluminación
 float light_x = 0.0f;
@@ -31,6 +31,28 @@ float light_z = 0.0f;
 float light_range = LIGHT_RANGE;
 
 // Variables del sistema de carga eliminadas
+
+// Función para frustum culling básico
+bool is_in_frustum(int x, int z) {
+    // Calcular vector desde el jugador al objeto
+    float dx = x - player.x;
+    float dz = z - player.z;
+    
+    // Calcular ángulo del objeto relativo a la dirección de la cámara
+    float object_angle = atan2(dz, dx);
+    float player_angle = player.yaw;
+    
+    // Normalizar ángulos
+    float angle_diff = object_angle - player_angle;
+    while (angle_diff > M_PI) angle_diff -= 2.0f * M_PI;
+    while (angle_diff < -M_PI) angle_diff += 2.0f * M_PI;
+    
+    // Campo de visión de 150 grados (75 grados a cada lado) - más generoso
+    float fov_half = M_PI * 5.0f / 12.0f;
+    
+    // Verificar si está dentro del campo de visión
+    return fabs(angle_diff) <= fov_half;
+}
 
 void init_renderer() {
     // Habilitar características 3D
@@ -212,22 +234,23 @@ void draw_ceiling() {
 }
 
 void setup_fog() {
-    // Configurar niebla estilo Silent Hill - solo en la distancia y arriba
+    // Configurar niebla MUY densa para ocultar completamente el fondo
     glEnable(GL_FOG);
-    glFogi(GL_FOG_MODE, GL_EXP2); // Usar niebla exponencial para efecto más suave
-    glFogf(GL_FOG_DENSITY, 0.0005f); // Densidad ultra reducida
-    glFogf(GL_FOG_START, 40.0f); // Comenzar la niebla a 40 unidades (mucho más lejos)
-    glFogf(GL_FOG_END, 120.0f); // Terminar la niebla a 120 unidades
+    glFogi(GL_FOG_MODE, GL_EXP2); // Usar niebla exponencial
+    glFogf(GL_FOG_DENSITY, 0.05f); // Densidad MUY alta
+    glFogf(GL_FOG_START, 5.0f); // Comenzar la niebla muy cerca
+    glFogf(GL_FOG_END, 30.0f); // Terminar la niebla más cerca
     
-    // Color de la niebla gris claro estilo Silent Hill
-    GLfloat fogColor[4] = {0.3f, 0.3f, 0.3f, 1.0f}; // Gris claro
+    // Color de la niebla muy denso y oscuro
+    GLfloat fogColor[4] = {0.1f, 0.1f, 0.15f, 1.0f}; // Gris muy oscuro
     glFogfv(GL_FOG_COLOR, fogColor);
 }
 
 void update_fog_distance() {
-    // Actualizar parámetros de niebla
-    glFogf(GL_FOG_START, fog_start);
-    glFogf(GL_FOG_END, fog_end);
+    // Mantener niebla MUY densa fija para ocultar completamente el fondo
+    glFogf(GL_FOG_START, 5.0f);
+    glFogf(GL_FOG_END, 30.0f);
+    glFogf(GL_FOG_DENSITY, 0.05f);
 }
 
 void setup_lighting() {
@@ -365,8 +388,24 @@ void render_world() {
     // Configurar niebla
     setup_fog();
     
-    // Actualizar iluminación dinámica
-    update_lighting();
+    // Actualizar niebla dinámicamente
+    update_fog_distance();
+    
+    // Forzar configuración de niebla en cada frame
+    glEnable(GL_FOG);
+    glFogi(GL_FOG_MODE, GL_EXP2);
+    glFogf(GL_FOG_DENSITY, 0.05f);
+    glFogf(GL_FOG_START, 5.0f);
+    glFogf(GL_FOG_END, 30.0f);
+    GLfloat fogColor[4] = {0.1f, 0.1f, 0.15f, 1.0f};
+    glFogfv(GL_FOG_COLOR, fogColor);
+    
+    // Actualizar iluminación dinámica (cada 3 frames para mejor rendimiento)
+    static int lighting_frame_counter = 0;
+    if (lighting_frame_counter % 3 == 0) {
+        update_lighting();
+    }
+    lighting_frame_counter++;
     
     // Actualizar partículas
     update_particles();
@@ -375,39 +414,100 @@ void render_world() {
     draw_floor();
     draw_ceiling();
     
-    // Renderizar el laberinto 3D con muros completamente sólidos
-    // Ordenar por distancia para renderizado suave
-    for (int x = 0; x < MAZE_WIDTH; x++) {
-        for (int z = 0; z < MAZE_HEIGHT; z++) {
+    // Renderizar el laberinto 3D con carga progresiva inteligente
+    // Calcular rango de renderizado basado en la dirección de la cámara
+    float render_distance = 25.0f; // Distancia reducida para que los muros aparezcan más cerca
+    float player_yaw = player.yaw;
+    
+    // Optimización: usar distancia al cuadrado para evitar sqrt costoso
+    float render_distance_sq = render_distance * render_distance;
+    
+    // Sistema de carga progresiva: área más grande pero con prioridades
+    int start_x = (int)(player.x - render_distance);
+    int end_x = (int)(player.x + render_distance);
+    int start_z = (int)(player.z - render_distance);
+    int end_z = (int)(player.z + render_distance);
+    
+    // Limitar a los bordes del mapa
+    if (start_x < 0) start_x = 0;
+    if (end_x >= MAZE_WIDTH) end_x = MAZE_WIDTH - 1;
+    if (start_z < 0) start_z = 0;
+    if (end_z >= MAZE_HEIGHT) end_z = MAZE_HEIGHT - 1;
+    
+    for (int x = start_x; x <= end_x; x++) {
+        for (int z = start_z; z <= end_z; z++) {
             if (maze[x][z] == 1) { // Si hay una pared
-                // Calcular distancia desde el jugador
-                float distance = sqrt((x - player.x) * (x - player.x) + 
-                                     (z - player.z) * (z - player.z));
+                // Calcular distancia al cuadrado (más eficiente que sqrt)
+                float dx = x - player.x;
+                float dz = z - player.z;
+                float distance_sq = dx * dx + dz * dz;
                 
-                // Renderizar muros sólidos con culling dinámico
-                if (distance <= 50.0f) { // Rango aumentado para mejor visibilidad
-                    // Material ya configurado en draw_tall_wall
+                // Verificar distancia primero (más rápido)
+                if (distance_sq <= render_distance_sq) {
+                    // Solo calcular sqrt cuando sea necesario
+                    float distance = sqrt(distance_sq);
                     
-                    // Asegurar que no hay transparencia
-                    glDisable(GL_BLEND);
-                    glDepthMask(GL_TRUE);
+                    // Sistema de prioridades: objetos cercanos siempre se renderizan
+                    bool should_render = false;
+                    int levels = MAZE_LEVELS;
                     
-                    // Dibujar pared con gran altura (8 niveles)
-                    draw_tall_wall(x, z, MAZE_LEVELS);
+                    if (distance <= 15.0f) {
+                        // Zona cercana: siempre renderizar con máximo detalle
+                        should_render = true;
+                        levels = MAZE_LEVELS;
+                    } else if (distance <= 25.0f) {
+                        // Zona media: renderizar con frustum culling más permisivo
+                        should_render = is_in_frustum(x, z);
+                        levels = MAZE_LEVELS;
+                    } else {
+                        // Zona lejana: solo si está en el campo de visión y con menos detalle
+                        should_render = is_in_frustum(x, z);
+                        levels = MAZE_LEVELS / 2; // Reducir altura para objetos lejanos
+                    }
+                    
+                    if (should_render) {
+                        // Material ya configurado en draw_tall_wall
+                        glDisable(GL_BLEND);
+                        glDepthMask(GL_TRUE);
+                        
+                        // Dibujar pared con altura optimizada
+                        draw_tall_wall(x, z, levels);
+                    }
                 }
             } else if (maze[x][z] == 2) { // Elementos decorativos
-                // Calcular distancia desde el jugador
-                float distance = sqrt((x - player.x) * (x - player.x) + 
-                                     (z - player.z) * (z - player.z));
+                // Calcular distancia al cuadrado (más eficiente)
+                float dx = x - player.x;
+                float dz = z - player.z;
+                float distance_sq = dx * dx + dz * dz;
+                float decor_distance_sq = 20.0f * 20.0f;
                 
-                // Renderizar elementos decorativos sólidos
-                if (distance <= 25.0f) { // Rango fijo más pequeño
-                    // Material ya configurado en draw_cube
-                    glDisable(GL_BLEND);
-                    glDepthMask(GL_TRUE);
+                // Sistema de prioridades para elementos decorativos
+                if (distance_sq <= decor_distance_sq) {
+                    float distance = sqrt(distance_sq);
+                    bool should_render = false;
+                    float size = 0.2f;
                     
-                    // Dibujar elemento decorativo más pequeño
-                    draw_cube(x, 0.3f, z, 0.2f);
+                    if (distance <= 12.0f) {
+                        // Zona cercana: siempre renderizar
+                        should_render = true;
+                        size = 0.2f;
+                    } else if (distance <= 20.0f) {
+                        // Zona media: con frustum culling permisivo
+                        should_render = is_in_frustum(x, z);
+                        size = 0.2f;
+                    } else {
+                        // Zona lejana: solo si está visible y más pequeño
+                        should_render = is_in_frustum(x, z);
+                        size = 0.1f;
+                    }
+                    
+                    if (should_render) {
+                        glDisable(GL_BLEND);
+                        glDepthMask(GL_TRUE);
+                        
+                        // Dibujar elemento decorativo optimizado
+                        draw_cube(x, 0.3f, z, size);
+                    }
                 }
             }
         }

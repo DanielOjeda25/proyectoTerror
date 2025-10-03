@@ -32,11 +32,11 @@ void init_player() {
     player.velocityY = 0.0f;
     player.isGrounded = true;
     player.canJump = true;
-    player.jumpForce = 0.15f;
-    player.gravity = -0.008f;
+    player.jumpForce = 0.18f;  // Fuerza de salto aumentada
+    player.gravity = -0.006f;  // Gravedad reducida para salto más flotante
     
     // Inicializar sistema de movimiento (solo caminar)
-    player.walkSpeed = 0.05f;  // Velocidad de caminata acelerada
+    player.walkSpeed = 0.08f;  // Velocidad de caminata aumentada
     player.moveSpeed = player.walkSpeed;  // Usar la misma velocidad
     
     // Inicializar sistema de audio
