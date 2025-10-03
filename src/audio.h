@@ -19,6 +19,8 @@ void init_audio();
 void play_footstep_sound();
 void play_running_sound();
 void play_ambient_sound();
+void play_enemy_sound();
+void play_death_sound();
 void update_audio();
 void cleanup_audio();
 

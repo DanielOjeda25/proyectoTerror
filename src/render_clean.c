@@ -10,14 +10,9 @@
 #include <math.h>
 #include <time.h>
 
-// Definir M_PI si no está definido
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-// Variables globales del renderizador (externas)
-extern int windowWidth;
-extern int windowHeight;
+// Variables globales del renderizador
+int windowWidth = 1920;
+int windowHeight = 1080;
 
 // Variables de niebla
 float fog_start = 15.0f;

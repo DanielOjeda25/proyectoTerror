@@ -124,11 +124,17 @@ int main() {
         update_enemy();
         process_events();
         
-        // Verificar si el jugador está muerto
-        if (is_player_dead()) {
-            printf("¡GAME OVER! El enemigo te ha alcanzado.\n");
-            break;
-        }
+            // Verificar si el jugador está muerto
+            if (is_player_dead()) {
+                printf("¡GAME OVER! El enemigo te ha alcanzado.\n");
+                break;
+            }
+            
+            // Verificar si el jugador llegó a la salida
+            if (check_exit_reached(player.x, player.z)) {
+                printf("¡FELICIDADES! Has escapado de los Backrooms.\n");
+                break;
+            }
         
         // Renderizar mundo 3D
         render_world();

@@ -32,7 +32,7 @@ void generate_map() {
     printf("Iniciando generación de mapa...\n");
     
     // Inicializar todo como paredes
-    for (int x = 0; x < MAZE_WIDTH; x++) {
+        for (int x = 0; x < MAZE_WIDTH; x++) {
         for (int z = 0; z < MAZE_HEIGHT; z++) {
             maze[x][z] = 1;
         }
@@ -72,6 +72,15 @@ void generate_map() {
         }
     }
     printf("Mapa generado: %d muros de %d celdas totales\n", wall_count, MAZE_WIDTH * MAZE_HEIGHT);
+}
+
+// Función para detectar si el jugador llegó a la salida
+bool check_exit_reached(float x, float z) {
+    // Verificar si está cerca de los bordes del mapa (salida)
+    if (x <= 2.0f || x >= MAZE_WIDTH - 2.0f || z <= 2.0f || z >= MAZE_HEIGHT - 2.0f) {
+        return true;
+    }
+    return false;
 }
 
 void generate_classic_maze() {

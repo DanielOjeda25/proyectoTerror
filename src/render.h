@@ -26,6 +26,7 @@ void draw_ceiling();
 void setup_fog();
 void update_fog_distance();
 void setup_lighting();
+void setup_enemy_lighting(float x, float y, float z);
 void update_lighting();
 void update_fog_based_on_lighting();
 void render_light_points();

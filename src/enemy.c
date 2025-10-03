@@ -3,6 +3,7 @@
 #include "player.h"
 #include "map.h"
 #include "render.h"
+#include "audio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -81,18 +82,23 @@ void update_enemy() {
     if (enemy.ai_decision_timer >= 120) {
         enemy.ai_decision_timer = 0;
         
-        // Calcular nivel de sospecha basado en distancia y movimiento
+        // Calcular nivel de sospecha basado en distancia y movimiento (IA más agresiva)
         if (distance_to_player <= enemy.detection_range) {
-            // Aumentar sospecha si está cerca
-            enemy.suspicion_level += 0.3f;
+            // Aumentar sospecha más agresivamente si está cerca
+            enemy.suspicion_level += 0.5f;
             
             // Aumentar sospecha si el jugador se está moviendo
             if (player_movement > 0.1f) {
-                enemy.suspicion_level += 0.2f;
+                enemy.suspicion_level += 0.3f;
+            }
+            
+            // Aumentar sospecha si el jugador se mueve rápido
+            if (player_movement > 0.2f) {
+                enemy.suspicion_level += 0.4f;
             }
         } else {
-            // Reducir sospecha si está lejos
-            enemy.suspicion_level -= 0.1f;
+            // Reducir sospecha más lentamente si está lejos
+            enemy.suspicion_level -= 0.05f;
         }
         
         // Limitar nivel de sospecha entre 0 y 1
@@ -102,19 +108,19 @@ void update_enemy() {
         // Decisión de IA basada en nivel de sospecha
         float decision = (float)rand() / RAND_MAX; // Número aleatorio entre 0 y 1
         
-        if (enemy.suspicion_level > 0.7f && decision < 0.8f) {
-            // Alta sospecha: 80% de probabilidad de cazar
+        if (enemy.suspicion_level > 0.6f && decision < 0.9f) {
+            // Alta sospecha: 90% de probabilidad de cazar (más agresivo)
             enemy.is_hunting = true;
             enemy.is_stalking = false;
-            printf("ENEMIGO: ¡ALTA SOSPECHA! Nivel: %.2f - MODO CAZA\n", enemy.suspicion_level);
-        } else if (enemy.suspicion_level > 0.4f && decision < 0.6f) {
-            // Sospecha media: 60% de probabilidad de acechar
+            printf("ENEMIGO: ¡ALTA SOSPECHA! Nivel: %.2f - MODO CAZA AGRESIVO\n", enemy.suspicion_level);
+        } else if (enemy.suspicion_level > 0.3f && decision < 0.8f) {
+            // Sospecha media: 80% de probabilidad de acechar (más agresivo)
             enemy.is_hunting = false;
             enemy.is_stalking = true;
-            enemy.stalking_timer = 300; // 5 segundos de acecho
-            printf("ENEMIGO: Sospecha media (%.2f) - MODO ACECHO\n", enemy.suspicion_level);
-        } else if (enemy.suspicion_level > 0.2f && decision < 0.3f) {
-            // Baja sospecha: 30% de probabilidad de investigar
+            enemy.stalking_timer = 240; // 4 segundos de acecho
+            printf("ENEMIGO: Sospecha media (%.2f) - MODO ACECHO AGRESIVO\n", enemy.suspicion_level);
+        } else if (enemy.suspicion_level > 0.1f && decision < 0.6f) {
+            // Baja sospecha: 60% de probabilidad de investigar (más agresivo)
             enemy.is_hunting = false;
             enemy.is_stalking = true;
             enemy.stalking_timer = 180; // 3 segundos de acecho
@@ -144,6 +150,9 @@ void update_enemy() {
             
             enemy.teleport_cooldown = 240; // 4 segundos de cooldown
             printf("¡ENEMIGO CAZANDO! Posición: (%.1f, %.1f)\n", enemy.x, enemy.z);
+            
+            // Reproducir sonido de enemigo cuando está cazando
+            play_enemy_sound();
         }
     } else if (enemy.is_stalking) {
         // Modo acecho: teletransportarse a distancia media
@@ -169,8 +178,8 @@ void update_enemy() {
             enemy.is_stalking = false;
         }
     } else {
-        // Modo patrulla: teletransportarse aleatoriamente cada 3-10 segundos
-        if (enemy.behavior_timer % (rand() % 420 + 180) == 0 && enemy.teleport_cooldown <= 0) {
+        // Modo patrulla: teletransportarse aleatoriamente cada 5-10 segundos
+        if (enemy.behavior_timer % (rand() % 300 + 300) == 0 && enemy.teleport_cooldown <= 0) {
             // Teletransportarse a posición aleatoria
             enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
             enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
@@ -189,6 +198,10 @@ void update_enemy() {
     // Verificar si está en rango de ataque
     if (distance_to_player <= enemy.attack_range) {
         printf("¡EL ENEMIGO TE HA ALCANZADO! ¡GAME OVER!\n");
+        
+        // Reproducir sonido de muerte
+        play_death_sound();
+        
         enemy.active = false; // Desactivar enemigo
         // El juego se cerrará en el bucle principal
     }
@@ -250,13 +263,17 @@ void render_enemy_3d() {
     
     // Renderizar si está a menos de 100 unidades (más visible)
     if (distance <= 100.0f) {
+        // Configurar iluminación del enemigo
+        float float_height = 2.0f + sin(enemy.behavior_timer * 0.05f) * 0.3f;
+        setup_enemy_lighting(enemy.x, float_height, enemy.z);
+        
         // Configurar material rojo brillante y pulsante
         float pulse = (sin(enemy.behavior_timer * 0.05f) + 1.0f) * 0.5f; // Pulsación más lenta
-        float intensity = 0.8f + pulse * 0.2f; // Entre 0.8 y 1.0 (más brillante)
+        float intensity = 1.0f + pulse * 0.5f; // Entre 1.0 y 1.5 (más brillante)
         
-        GLfloat ambient[] = {0.6f * intensity, 0.0f, 0.0f, 1.0f};
-        GLfloat diffuse[] = {1.0f * intensity, 0.0f, 0.0f, 1.0f};
-        GLfloat specular[] = {1.0f * intensity, 0.2f, 0.2f, 1.0f};
+        GLfloat ambient[] = {0.8f * intensity, 0.0f, 0.0f, 1.0f};
+        GLfloat diffuse[] = {1.2f * intensity, 0.0f, 0.0f, 1.0f};
+        GLfloat specular[] = {1.0f * intensity, 0.3f, 0.3f, 1.0f};
         GLfloat shininess[] = {128.0f};
         
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
@@ -266,14 +283,31 @@ void render_enemy_3d() {
         
         // Dibujar cubo rojo flotante del enemigo
         glPushMatrix();
-        float float_height = 2.0f + sin(enemy.behavior_timer * 0.05f) * 0.3f; // Flotación
+        
+        // Animación de acercamiento cuando está cerca
+        float approach_animation = 0.0f;
+        if (distance <= 15.0f) {
+            // Efecto de "respiración" más intenso cuando está cerca
+            approach_animation = sin(enemy.behavior_timer * 0.2f) * 0.5f;
+            float_height += approach_animation;
+        }
+        
         glTranslatef(enemy.x, float_height, enemy.z);
         
-        // Rotación lenta para efecto hipnótico
-        glRotatef(enemy.behavior_timer * 0.5f, 0, 1, 0);
+        // Rotación más rápida cuando está cerca
+        float rotation_speed = 0.5f;
+        if (distance <= 15.0f) {
+            rotation_speed = 2.0f; // Rotación más rápida cuando está cerca
+        }
+        glRotatef(enemy.behavior_timer * rotation_speed, 0, 1, 0);
         
-        // Dibujar cubo rojo más grande y visible
-        float size = 1.2f + pulse * 0.3f; // Tamaño pulsante
+                // Dibujar cubo rojo más pequeño
+                float size = 0.6f + pulse * 0.2f; // Tamaño pulsante más pequeño
+                
+                // Hacer el cubo un poco más grande cuando está cerca
+                if (distance <= 15.0f) {
+                    size += 0.2f + approach_animation * 0.1f; // Más pequeño cuando está cerca
+                }
         glBegin(GL_QUADS);
         
         // Cara frontal (Z+)

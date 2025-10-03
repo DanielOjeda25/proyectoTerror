@@ -20,12 +20,8 @@ typedef struct {
     float jumpForce;            // Fuerza del salto
     float gravity;              // Fuerza de gravedad
     
-    // Sistema de correr
-    float sprintSpeed;          // Velocidad de sprint
-    float normalSpeed;          // Velocidad normal
-    float sprintDuration;       // Duración actual del sprint
-    float sprintCooldown;       // Tiempo de cooldown del sprint
-    bool isSprinting;           // Si está corriendo
+    // Sistema de movimiento (solo caminar)
+    float walkSpeed;            // Velocidad de caminata
 } Player3D;
 
 // Funciones del jugador
@@ -34,7 +30,6 @@ void update_player();
 void handle_movement();
 void handle_rotation(float deltaX, float deltaY);
 void handle_jumping();
-void handle_sprinting();
 void apply_gravity();
 bool check_collision(float newX, float newZ);
 bool check_ground_collision(float newX, float newY, float newZ);

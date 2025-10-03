@@ -35,13 +35,9 @@ void init_player() {
     player.jumpForce = 0.15f;
     player.gravity = -0.008f;
     
-    // Inicializar sistema de sprint
-    player.normalSpeed = 0.03f;  // Velocidad normal de caminata
-    player.sprintSpeed = 0.08f;  // Velocidad de sprint
-    player.moveSpeed = player.normalSpeed;  // Usar la misma velocidad
-    player.sprintDuration = 0.0f;
-    player.sprintCooldown = 0.0f;
-    player.isSprinting = false;
+    // Inicializar sistema de movimiento (solo caminar)
+    player.walkSpeed = 0.05f;  // Velocidad de caminata acelerada
+    player.moveSpeed = player.walkSpeed;  // Usar la misma velocidad
     
     // Inicializar sistema de audio
     init_audio();
@@ -52,7 +48,6 @@ void init_player() {
 
 void update_player() {
     // Actualizar posición del jugador basado en input
-    handle_sprinting();
     handle_movement();
     handle_jumping();
     apply_gravity();
@@ -68,8 +63,8 @@ void handle_movement() {
     
     // Calcular dirección de movimiento basada en yaw (rotación horizontal)
     // Sistema de coordenadas estándar: yaw=0 mira hacia X positivo (adelante)
-    // Usar la velocidad actual (normal o sprint)
-    float currentSpeed = player.isSprinting ? player.sprintSpeed : player.normalSpeed;
+            // Usar la velocidad de caminata
+            float currentSpeed = player.walkSpeed;
     
     // Adelante: hacia X positivo
     float forwardX = cos(player.yaw) * currentSpeed;
@@ -116,15 +111,9 @@ void handle_movement() {
                     static int step_counter = 0;
                     step_counter++;
                     
-                    // Diferentes sonidos según la velocidad
-                    if (player.isSprinting) {
-                        if (step_counter % 20 == 0) { // Más frecuente al correr
-                            play_running_sound();
-                        }
-                    } else {
-                        if (step_counter % 30 == 0) { // Normal al caminar
-                            play_footstep_sound();
-                        }
+                    // Sonido de pasos al caminar
+                    if (step_counter % 30 == 0) { // Normal al caminar
+                        play_footstep_sound();
                     }
                 } else {
                     // Hay colisión, intentar movimiento solo en X o solo en Z
@@ -184,30 +173,6 @@ bool check_collision(float newX, float newZ) {
     return false;
 }
 
-void handle_sprinting() {
-    // Verificar si se presiona la tecla de sprint (SHIFT)
-    if (is_key_pressed(GLFW_KEY_LEFT_SHIFT) && player.sprintCooldown <= 0.0f) {
-        if (!player.isSprinting) {
-            player.isSprinting = true;
-            player.sprintDuration = 1.5f; // 1.5 segundos de sprint
-        }
-    }
-    
-    // Actualizar duración del sprint
-    if (player.isSprinting) {
-        player.sprintDuration -= 0.016f; // Aproximadamente 60 FPS
-        
-        if (player.sprintDuration <= 0.0f) {
-            player.isSprinting = false;
-            player.sprintCooldown = 5.0f; // 5 segundos de cooldown
-        }
-    }
-    
-    // Actualizar cooldown
-    if (player.sprintCooldown > 0.0f) {
-        player.sprintCooldown -= 0.016f;
-    }
-}
 
 void handle_jumping() {
     // Verificar si se presiona la tecla de salto (ESPACIO)

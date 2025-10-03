@@ -163,11 +163,77 @@ def main():
     save_wav("sounds/ambient.wav", ambient_sound)
     print("Generado: sounds/ambient.wav")
     
+    # Generar sonidos de enemigo
+    print("Generando sonidos de enemigo...")
+    enemy_sound = generate_enemy_sound()
+    save_wav("sounds/enemy.wav", enemy_sound)
+    print("Generado: sounds/enemy.wav")
+    
+    # Generar sonido de muerte
+    print("Generando sonido de muerte...")
+    death_sound = generate_death_sound()
+    save_wav("sounds/death.wav", death_sound)
+    print("Generado: sounds/death.wav")
+    
     print("\n¡Todos los sonidos generados exitosamente!")
     print("Archivos creados:")
     print("- sounds/footstep_1.wav a footstep_4.wav (pisadas normales)")
     print("- sounds/running_1.wav a running_3.wav (pisadas de correr)")
     print("- sounds/ambient.wav (sonido ambiental)")
+    print("- sounds/enemy.wav (sonido de enemigo)")
+    print("- sounds/death.wav (sonido de muerte)")
+
+def generate_enemy_sound(duration=0.8, sample_rate=44100, frequency=150, volume=0.6):
+    """Genera un sonido de enemigo amenazante"""
+    samples = int(duration * sample_rate)
+    
+    # Crear tono principal amenazante
+    t = np.linspace(0, duration, samples)
+    tone = np.sin(2 * np.pi * frequency * t) * volume
+    
+    # Añadir armónicos para sonido más siniestro
+    harmonic1 = np.sin(2 * np.pi * frequency * 1.5 * t) * volume * 0.4
+    harmonic2 = np.sin(2 * np.pi * frequency * 2.5 * t) * volume * 0.2
+    
+    # Añadir ruido siniestro
+    noise = np.random.normal(0, 0.1, samples)
+    
+    sound = tone + harmonic1 + harmonic2 + noise
+    
+    # Aplicar envolvente descendente (como un gruñido)
+    envelope = np.ones(samples)
+    envelope = np.linspace(1, 0.1, samples)
+    
+    sound = sound * envelope
+    sound = np.clip(sound, -1, 1)
+    
+    return sound
+
+def generate_death_sound(duration=2.0, sample_rate=44100, frequency=200, volume=0.8):
+    """Genera un sonido de muerte dramático"""
+    samples = int(duration * sample_rate)
+    
+    # Crear tono principal que desciende
+    t = np.linspace(0, duration, samples)
+    tone = np.sin(2 * np.pi * frequency * t) * volume
+    
+    # Hacer que la frecuencia descienda (efecto de muerte)
+    frequency_sweep = frequency * np.exp(-t * 2)
+    tone_sweep = np.sin(2 * np.pi * frequency_sweep * t) * volume * 0.5
+    
+    # Añadir ruido dramático
+    noise = np.random.normal(0, 0.15, samples)
+    
+    sound = tone + tone_sweep + noise
+    
+    # Aplicar envolvente dramática
+    envelope = np.ones(samples)
+    envelope = np.linspace(1, 0, samples) ** 0.5  # Decaimiento exponencial
+    
+    sound = sound * envelope
+    sound = np.clip(sound, -1, 1)
+    
+    return sound
 
 if __name__ == "__main__":
     main()

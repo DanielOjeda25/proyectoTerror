@@ -86,4 +86,7 @@ void generate_light_points();
 void place_light_in_room(Room room);
 void place_light_in_corridor(Corridor corridor);
 
+// Función para detectar si el jugador llegó a la salida
+bool check_exit_reached(float x, float z);
+
 #endif // MAP_H
