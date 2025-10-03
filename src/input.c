@@ -67,17 +67,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         // Manejar teclas especiales
         switch (key) {
             case GLFW_KEY_LEFT:
-                player.yaw -= player.rotSpeed;
-                break;
-            case GLFW_KEY_RIGHT:
                 player.yaw += player.rotSpeed;
                 break;
+            case GLFW_KEY_RIGHT:
+                player.yaw -= player.rotSpeed;
+                break;
             case GLFW_KEY_UP:
-                player.pitch += player.rotSpeed;
+                player.pitch -= player.rotSpeed;
                 if (player.pitch > M_PI/2) player.pitch = M_PI/2;
                 break;
             case GLFW_KEY_DOWN:
-                player.pitch -= player.rotSpeed;
+                player.pitch += player.rotSpeed;
                 if (player.pitch < -M_PI/2) player.pitch = -M_PI/2;
                 break;
             case GLFW_KEY_W:
