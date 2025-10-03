@@ -20,9 +20,9 @@ extern int windowWidth;
 extern int windowHeight;
 
 // Variables de niebla
-float fog_start = 15.0f;
-float fog_end = 80.0f;
-float fog_density = 0.003f;
+float fog_start = 25.0f;
+float fog_end = 150.0f;
+float fog_density = 0.002f;
 
 // Variables de iluminación
 float light_x = 0.0f;
@@ -58,9 +58,9 @@ void setup_camera() {
     glLoadIdentity();
     
     // Calcular dirección de la cámara basada en yaw y pitch
-    float lookX = cos(player.pitch) * sin(player.yaw);
+    float lookX = cos(player.pitch) * -sin(player.yaw);
     float lookY = sin(player.pitch);
-    float lookZ = cos(player.pitch) * cos(player.yaw);
+    float lookZ = cos(player.pitch) * -cos(player.yaw);
     
     // Normalizar el vector de dirección
     float length = sqrt(lookX * lookX + lookY * lookY + lookZ * lookZ);
@@ -231,41 +231,45 @@ void update_fog_distance() {
 }
 
 void setup_lighting() {
-    // Configurar iluminación realista
+    // Configurar iluminación realista y dinámica
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHT1); // Luz adicional para el enemigo
+    glEnable(GL_LIGHT2); // Luz ambiental adicional
     
-    // Configurar luz ambiental (muy brillante para visibilidad)
-    GLfloat ambient[] = {0.6f, 0.6f, 0.6f, 1.0f};
+    // Configurar luz ambiental (más tenue para ambiente backrooms)
+    GLfloat ambient[] = {0.3f, 0.3f, 0.3f, 1.0f};
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
     
-    // Configurar luz difusa (muy brillante para ambiente backrooms)
-    GLfloat diffuse[] = {1.5f, 1.5f, 1.2f, 1.0f};
+    // Configurar luz difusa (más realista)
+    GLfloat diffuse[] = {0.8f, 0.8f, 0.7f, 1.0f};
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
     
-    // Configurar luz especular (muy visible)
-    GLfloat specular[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    // Configurar luz especular (más sutil)
+    GLfloat specular[] = {0.4f, 0.4f, 0.4f, 1.0f};
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
     
-    // Configurar atenuación
-    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0f);
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, LIGHT_ATTENUATION);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1f);
+    // Configurar atenuación más realista
+    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.5f);
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.1f);
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.05f);
     
     // Configurar rango de la luz
     glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 180.0f); // Luz omnidireccional
     
-    // Configurar material por defecto muy brillante
-    GLfloat mat_ambient[] = {0.4f, 0.4f, 0.4f, 1.0f};
-    GLfloat mat_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    GLfloat mat_specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    GLfloat mat_shininess[] = {128.0f};
+    // Configurar material por defecto más realista
+    GLfloat mat_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
+    GLfloat mat_diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    GLfloat mat_specular[] = {0.3f, 0.3f, 0.3f, 1.0f};
+    GLfloat mat_shininess[] = {64.0f};
     
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
+    
+    // Habilitar sombras suaves
+    glEnable(GL_NORMALIZE);
 }
 
 void setup_enemy_lighting(float x, float y, float z) {
@@ -314,9 +318,25 @@ void update_lighting() {
     light_y = player.y + player.height;
     light_z = player.z;
     
-    // Configurar posición de la luz
+    // Configurar posición de la luz principal (linterna del jugador)
     GLfloat position[] = {light_x, light_y, light_z, 1.0f};
     glLightfv(GL_LIGHT0, GL_POSITION, position);
+    
+    // Configurar luz ambiental dinámica basada en la posición
+    static float time_counter = 0.0f;
+    time_counter += 0.016f; // Aproximadamente 60 FPS
+    float ambient_intensity = 0.2f + 0.1f * sin(time_counter * 0.5f);
+    GLfloat ambient[] = {ambient_intensity, ambient_intensity, ambient_intensity * 0.9f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+    
+    // Configurar luz ambiental adicional (LIGHT2) para iluminación general
+    GLfloat ambient2[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat diffuse2[] = {0.3f, 0.3f, 0.3f, 1.0f};
+    GLfloat position2[] = {0.0f, 10.0f, 0.0f, 1.0f}; // Luz desde arriba
+    
+    glLightfv(GL_LIGHT2, GL_AMBIENT, ambient2);
+    glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse2);
+    glLightfv(GL_LIGHT2, GL_POSITION, position2);
     
     // Actualizar niebla basada en la iluminación
     update_fog_based_on_lighting();
@@ -364,8 +384,8 @@ void render_world() {
                 float distance = sqrt((x - player.x) * (x - player.x) + 
                                      (z - player.z) * (z - player.z));
                 
-                // Renderizar muros sólidos con culling más agresivo
-                if (distance <= 30.0f) { // Rango fijo más pequeño para mejor rendimiento
+                // Renderizar muros sólidos con culling dinámico
+                if (distance <= 50.0f) { // Rango aumentado para mejor visibilidad
                     // Material ya configurado en draw_tall_wall
                     
                     // Asegurar que no hay transparencia
@@ -448,6 +468,7 @@ void draw_minimap_background() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glColor4f(0.0f, 0.0f, 0.0f, 0.8f);
     
+    // Dibujar fondo del mini mapa
     glBegin(GL_QUADS);
     glVertex2f(x, y);
     glVertex2f(x + minimapSize, y);
@@ -455,7 +476,17 @@ void draw_minimap_background() {
     glVertex2f(x, y + minimapSize);
     glEnd();
     
+    // Dibujar borde del mini mapa
     glDisable(GL_BLEND);
+    glColor3f(0.8f, 0.8f, 0.8f); // Color del borde
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x, y);
+    glVertex2f(x + minimapSize, y);
+    glVertex2f(x + minimapSize, y + minimapSize);
+    glVertex2f(x, y + minimapSize);
+    glEnd();
+    glLineWidth(1.0f);
 }
 
 void draw_minimap_walls() {

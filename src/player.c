@@ -62,38 +62,38 @@ void handle_movement() {
     bool moved = false;
     
     // Calcular dirección de movimiento basada en yaw (rotación horizontal)
-    // Sistema de coordenadas estándar OpenGL: yaw=0 mira hacia Z negativo (adelante)
+    // Sistema de coordenadas: yaw=0 mira hacia Z negativo (adelante)
             // Usar la velocidad de caminata
             float currentSpeed = player.walkSpeed;
     
-    // Adelante: hacia Z negativo (estándar OpenGL)
+    // Adelante: hacia la dirección que mira la cámara
     float forwardX = -sin(player.yaw) * currentSpeed;
     float forwardZ = -cos(player.yaw) * currentSpeed;
-    // Derecha: perpendicular a la dirección de la cámara (hacia X positivo)
+    // Derecha: perpendicular a la dirección de la cámara
     float rightX = cos(player.yaw) * currentSpeed;
     float rightZ = -sin(player.yaw) * currentSpeed;
     
     // Verificar todas las teclas de movimiento presionadas
     if (is_key_pressed(GLFW_KEY_W)) {
-        // W: Adelante (hacia Z negativo - estándar OpenGL)
+        // W: Adelante (hacia donde mira la cámara)
         newX += forwardX;
         newZ += forwardZ;
         moved = true;
     }
     if (is_key_pressed(GLFW_KEY_S)) {
-        // S: Atrás (hacia Z positivo - estándar OpenGL)
+        // S: Atrás (opuesto a donde mira la cámara)
         newX -= forwardX;
         newZ -= forwardZ;
         moved = true;
     }
     if (is_key_pressed(GLFW_KEY_A)) {
-        // A: Izquierda (strafe left - hacia X negativo - estándar OpenGL)
+        // A: Izquierda (perpendicular a la cámara)
         newX -= rightX;
         newZ -= rightZ;
         moved = true;
     }
     if (is_key_pressed(GLFW_KEY_D)) {
-        // D: Derecha (strafe right - hacia X positivo - estándar OpenGL)
+        // D: Derecha (perpendicular a la cámara)
         newX += rightX;
         newZ += rightZ;
         moved = true;
@@ -133,11 +133,11 @@ void handle_movement() {
 }
 
 void handle_rotation(float deltaX, float deltaY) {
-    // Rotación horizontal (yaw) - estándar: mouse derecha = yaw positivo
-    player.yaw += deltaX * player.mouseSensitivity;
+    // Rotación horizontal (yaw) - estándar: mouse derecha = yaw negativo
+    player.yaw -= deltaX * player.mouseSensitivity;
     
-    // Rotación vertical (pitch) con límites - estándar: mouse arriba = pitch negativo
-    player.pitch -= deltaY * player.mouseSensitivity;
+    // Rotación vertical (pitch) con límites - estándar: mouse arriba = pitch positivo
+    player.pitch += deltaY * player.mouseSensitivity;
     // Límites más estrictos para evitar problemas de renderizado
     if (player.pitch > M_PI/2 - 0.1f) player.pitch = M_PI/2 - 0.1f;  // Evitar mirar exactamente hacia arriba
     if (player.pitch < -M_PI/2 + 0.1f) player.pitch = -M_PI/2 + 0.1f;  // Evitar mirar exactamente hacia abajo
