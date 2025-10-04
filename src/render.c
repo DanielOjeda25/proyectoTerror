@@ -92,10 +92,17 @@ void setup_camera() {
         lookZ /= length;
     }
     
-    // Configurar la cámara
+    // Configurar la cámara con altura corregida
+    float eye_height = player.y + player.height;
+    float look_height = eye_height + lookY;
+    
+    // Asegurar que la cámara esté a una altura mínima
+    if (eye_height < 0.5f) eye_height = 0.5f;
+    if (look_height < 0.5f) look_height = 0.5f;
+    
     gluLookAt(
-        player.x, player.y + player.height, player.z,  // Posición del ojo
-        player.x + lookX, player.y + player.height + lookY, player.z + lookZ,  // Punto de mira
+        player.x, eye_height, player.z,  // Posición del ojo
+        player.x + lookX, look_height, player.z + lookZ,  // Punto de mira
         0.0f, 1.0f, 0.0f  // Vector "up" (hacia arriba)
     );
 }
@@ -204,10 +211,10 @@ void draw_floor() {
     
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f); // Normal hacia arriba
-    glVertex3f(-200.0f, -0.1f, -200.0f);
-    glVertex3f(200.0f, -0.1f, -200.0f);
-    glVertex3f(200.0f, -0.1f, 200.0f);
-    glVertex3f(-200.0f, -0.1f, 200.0f);
+    glVertex3f(-200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, 0.0f, 200.0f);
+    glVertex3f(-200.0f, 0.0f, 200.0f);
     glEnd();
 }
 
@@ -234,23 +241,23 @@ void draw_ceiling() {
 }
 
 void setup_fog() {
-    // Configurar niebla MUY densa para ocultar completamente el fondo
+    // Configurar niebla más suave para mejor visibilidad
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_EXP2); // Usar niebla exponencial
-    glFogf(GL_FOG_DENSITY, 0.05f); // Densidad MUY alta
-    glFogf(GL_FOG_START, 5.0f); // Comenzar la niebla muy cerca
-    glFogf(GL_FOG_END, 30.0f); // Terminar la niebla más cerca
+    glFogf(GL_FOG_DENSITY, 0.01f); // Densidad reducida para mejor visibilidad
+    glFogf(GL_FOG_START, 15.0f); // Comenzar la niebla más lejos
+    glFogf(GL_FOG_END, 80.0f); // Terminar la niebla más lejos
     
-    // Color de la niebla muy denso y oscuro
-    GLfloat fogColor[4] = {0.1f, 0.1f, 0.15f, 1.0f}; // Gris muy oscuro
+    // Color de la niebla más claro
+    GLfloat fogColor[4] = {0.2f, 0.2f, 0.25f, 1.0f}; // Gris más claro
     glFogfv(GL_FOG_COLOR, fogColor);
 }
 
 void update_fog_distance() {
-    // Mantener niebla MUY densa fija para ocultar completamente el fondo
-    glFogf(GL_FOG_START, 5.0f);
-    glFogf(GL_FOG_END, 30.0f);
-    glFogf(GL_FOG_DENSITY, 0.05f);
+    // Mantener niebla suave para mejor visibilidad
+    glFogf(GL_FOG_START, 15.0f);
+    glFogf(GL_FOG_END, 80.0f);
+    glFogf(GL_FOG_DENSITY, 0.01f);
 }
 
 void setup_lighting() {
@@ -394,10 +401,10 @@ void render_world() {
     // Forzar configuración de niebla en cada frame
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_EXP2);
-    glFogf(GL_FOG_DENSITY, 0.05f);
-    glFogf(GL_FOG_START, 5.0f);
-    glFogf(GL_FOG_END, 30.0f);
-    GLfloat fogColor[4] = {0.1f, 0.1f, 0.15f, 1.0f};
+    glFogf(GL_FOG_DENSITY, 0.01f);
+    glFogf(GL_FOG_START, 15.0f);
+    glFogf(GL_FOG_END, 80.0f);
+    GLfloat fogColor[4] = {0.2f, 0.2f, 0.25f, 1.0f};
     glFogfv(GL_FOG_COLOR, fogColor);
     
     // Actualizar iluminación dinámica (cada 3 frames para mejor rendimiento)
@@ -414,10 +421,9 @@ void render_world() {
     draw_floor();
     draw_ceiling();
     
-    // Renderizar el laberinto 3D con carga progresiva inteligente
+    // Renderizar el laberinto 3D con carga progresiva optimizada
     // Calcular rango de renderizado basado en la dirección de la cámara
-    float render_distance = 25.0f; // Distancia reducida para que los muros aparezcan más cerca
-    float player_yaw = player.yaw;
+    float render_distance = 30.0f; // Distancia aumentada para mejor visibilidad
     
     // Optimización: usar distancia al cuadrado para evitar sqrt costoso
     float render_distance_sq = render_distance * render_distance;
@@ -451,11 +457,11 @@ void render_world() {
                     bool should_render = false;
                     int levels = MAZE_LEVELS;
                     
-                    if (distance <= 15.0f) {
+                    if (distance <= 20.0f) {
                         // Zona cercana: siempre renderizar con máximo detalle
                         should_render = true;
                         levels = MAZE_LEVELS;
-                    } else if (distance <= 25.0f) {
+                    } else if (distance <= 30.0f) {
                         // Zona media: renderizar con frustum culling más permisivo
                         should_render = is_in_frustum(x, z);
                         levels = MAZE_LEVELS;
@@ -479,7 +485,7 @@ void render_world() {
                 float dx = x - player.x;
                 float dz = z - player.z;
                 float distance_sq = dx * dx + dz * dz;
-                float decor_distance_sq = 20.0f * 20.0f;
+                float decor_distance_sq = 25.0f * 25.0f;
                 
                 // Sistema de prioridades para elementos decorativos
                 if (distance_sq <= decor_distance_sq) {
@@ -487,11 +493,11 @@ void render_world() {
                     bool should_render = false;
                     float size = 0.2f;
                     
-                    if (distance <= 12.0f) {
+                    if (distance <= 15.0f) {
                         // Zona cercana: siempre renderizar
                         should_render = true;
                         size = 0.2f;
-                    } else if (distance <= 20.0f) {
+                    } else if (distance <= 25.0f) {
                         // Zona media: con frustum culling permisivo
                         should_render = is_in_frustum(x, z);
                         size = 0.2f;

@@ -20,7 +20,7 @@ void init_player() {
     // Inicializar jugador con valores por defecto
     // Posición en el centro del mapa 200x200
     player.x = MAZE_WIDTH / 2.0f;
-    player.y = 0.1f;  // Ligeramente por encima del suelo para evitar caída
+    player.y = 1.0f;  // Altura inicial más alta para evitar problemas de cámara
     player.z = MAZE_HEIGHT / 2.0f;
     player.yaw = 0.0f;
     player.pitch = 0.0f;

@@ -1,9 +1,15 @@
 // map.c - Sistema de mapas para Backrooms 3D
 #include "map.h"
+#include "render.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+
+// Definir M_PI si no está definido
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 // Variables globales del mapa
 int maze[MAZE_WIDTH][MAZE_HEIGHT];
@@ -17,6 +23,8 @@ int roomCount = 0;
 int corridorCount = 0;
 int columnCount = 0;
 int lightCount = 0;
+
+// Variables de renderizado optimizado
 
 // Variables globales para tracking de salida
 static int exit_side = -1;
@@ -1110,3 +1118,5 @@ void cleanup_map() {
     columnCount = 0;
     lightCount = 0;
 }
+
+// ===== SISTEMA DE RENDERIZADO OPTIMIZADO =====

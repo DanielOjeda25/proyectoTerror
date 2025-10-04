@@ -27,7 +27,7 @@ void setup_opengl() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)windowWidth / (float)windowHeight;
-    gluPerspective(75.0f, aspect, 0.5f, 2000.0f);  // FOV 75°, near 0.5, far 2000
+    gluPerspective(75.0f, aspect, 0.1f, 2000.0f);  // FOV 75°, near 0.1, far 2000 (near más cercano)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
@@ -56,7 +56,7 @@ void window_size_callback(GLFWwindow* window, int width, int height) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float aspect = (float)width / (float)height;
-    gluPerspective(75.0f, aspect, 0.5f, 2000.0f);
+    gluPerspective(75.0f, aspect, 0.1f, 2000.0f);  // Usar el mismo near que en setup_opengl
     glMatrixMode(GL_MODELVIEW);
 }
 

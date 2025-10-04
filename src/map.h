@@ -9,6 +9,9 @@
 #define MAZE_HEIGHT 100
 #define MAZE_LEVELS 20  // Número de niveles de altura (mucho más alto)
 
+// Sistema de renderizado optimizado
+#define RENDER_DISTANCE 30.0f    // Distancia de renderizado en unidades
+
 // Estructuras de datos avanzadas para mapas más realistas
 typedef struct {
     int x, z;
@@ -48,11 +51,15 @@ extern int corridorCount;
 extern int columnCount;
 extern int lightCount;
 
+// Variables de renderizado optimizado
+
 // Funciones del mapa
 void init_map();
 void generate_map();
 bool is_wall(int x, int z);
 void cleanup_map();
+
+// Sistema de renderizado optimizado
 
 // Funciones de generación de patrones
 void generate_classic_maze();

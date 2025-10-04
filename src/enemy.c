@@ -225,7 +225,7 @@ void render_enemy_minimap() {
     if (!enemy.active) return;
     
     // Obtener dimensiones de la ventana desde render.h
-    extern int windowWidth, windowHeight;
+    extern int windowWidth;
     
     float minimapSize = 200.0f;
     float x = windowWidth - minimapSize - 10;
