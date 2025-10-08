@@ -55,169 +55,109 @@ void init_enemy() {
     enemy.last_player_x = player.x;
     enemy.last_player_z = player.z;
     
-    printf("Enemigo inicializado en posición (%.1f, %.1f)\n", enemy.x, enemy.z);
+    // Nuevo sistema de comportamiento escalonado
+    enemy.phase = 0; // 0 = Teletransporte aleatorio, 1 = Acercamiento gradual
+    enemy.phase_timer = 0;
+    enemy.phase_duration = 3600; // 1 minuto = 3600 frames (60 FPS)
+    enemy.teleport_frequency = 120; // Teletransportarse cada 2 segundos en fase 0
+    enemy.last_teleport = 0;
+    
+    printf("Enemigo inicializado en posición (%.1f, %.1f) - FASE: Teletransporte Aleatorio\n", enemy.x, enemy.z);
 }
 
 void update_enemy() {
     if (!enemy.active) return;
     
+    // Actualizar temporizadores
     enemy.behavior_timer++;
-    enemy.ai_decision_timer++;
-    
-    // Reducir cooldowns
-    if (enemy.teleport_cooldown > 0) {
-        enemy.teleport_cooldown--;
-    }
-    if (enemy.stalking_timer > 0) {
-        enemy.stalking_timer--;
-    }
+    enemy.phase_timer++;
     
     // Calcular distancia al jugador
     float distance_to_player = sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
                                    (enemy.z - player.z) * (enemy.z - player.z));
     
-    // Calcular movimiento del jugador para detectar actividad
-    float player_movement = sqrt((player.x - enemy.last_player_x) * (player.x - enemy.last_player_x) + 
-                                (player.z - enemy.last_player_z) * (player.z - enemy.last_player_z));
-    
-    // Actualizar última posición conocida del jugador
-    enemy.last_player_x = player.x;
-    enemy.last_player_z = player.z;
-    
-    // Sistema de IA: tomar decisiones cada 2 segundos (120 frames)
-    if (enemy.ai_decision_timer >= 120) {
-        enemy.ai_decision_timer = 0;
-        
-        // Calcular nivel de sospecha basado en distancia y movimiento (IA más agresiva)
-        if (distance_to_player <= enemy.detection_range) {
-            // Aumentar sospecha más agresivamente si está cerca
-            enemy.suspicion_level += 0.5f;
-            
-            // Aumentar sospecha si el jugador se está moviendo
-            if (player_movement > 0.1f) {
-                enemy.suspicion_level += 0.3f;
-            }
-            
-            // Aumentar sospecha si el jugador se mueve rápido
-            if (player_movement > 0.2f) {
-                enemy.suspicion_level += 0.4f;
-            }
-        } else {
-            // Reducir sospecha más lentamente si está lejos
-            enemy.suspicion_level -= 0.05f;
-        }
-        
-        // Limitar nivel de sospecha entre 0 y 1
-        if (enemy.suspicion_level < 0.0f) enemy.suspicion_level = 0.0f;
-        if (enemy.suspicion_level > 1.0f) enemy.suspicion_level = 1.0f;
-        
-        // Decisión de IA basada en nivel de sospecha
-        float decision = (float)rand() / RAND_MAX; // Número aleatorio entre 0 y 1
-        
-        if (enemy.suspicion_level > 0.6f && decision < 0.9f) {
-            // Alta sospecha: 90% de probabilidad de cazar (más agresivo)
-            enemy.is_hunting = true;
-            enemy.is_stalking = false;
-            printf("ENEMIGO: ¡ALTA SOSPECHA! Nivel: %.2f - MODO CAZA AGRESIVO\n", enemy.suspicion_level);
-        } else if (enemy.suspicion_level > 0.3f && decision < 0.8f) {
-            // Sospecha media: 80% de probabilidad de acechar (más agresivo)
-            enemy.is_hunting = false;
-            enemy.is_stalking = true;
-            enemy.stalking_timer = 240; // 4 segundos de acecho
-            printf("ENEMIGO: Sospecha media (%.2f) - MODO ACECHO AGRESIVO\n", enemy.suspicion_level);
-        } else if (enemy.suspicion_level > 0.1f && decision < 0.6f) {
-            // Baja sospecha: 60% de probabilidad de investigar (más agresivo)
-            enemy.is_hunting = false;
-            enemy.is_stalking = true;
-            enemy.stalking_timer = 180; // 3 segundos de acecho
-            printf("ENEMIGO: Baja sospecha (%.2f) - INVESTIGANDO\n", enemy.suspicion_level);
-        } else {
-            // Sin sospecha: patrullar normalmente
-            enemy.is_hunting = false;
-            enemy.is_stalking = false;
-        }
-    }
-    
-    // Comportamiento basado en estado de IA
-    if (enemy.is_hunting) {
-        // Modo caza: teletransportarse cerca del jugador
-        if (enemy.teleport_cooldown <= 0) {
-            int attempts = 0;
-            do {
-                float angle = (rand() % 360) * M_PI / 180.0f;
-                float distance = (rand() % 8) + 3; // Entre 3 y 11 unidades (más cerca)
-                
-                enemy.x = player.x + cos(angle) * distance;
-                enemy.z = player.z + sin(angle) * distance;
-                
-                // Asegurar que esté dentro del mapa
-                if (enemy.x < 5) enemy.x = 5;
-                if (enemy.x > MAZE_WIDTH - 5) enemy.x = MAZE_WIDTH - 5;
-                if (enemy.z < 5) enemy.z = 5;
-                if (enemy.z > MAZE_HEIGHT - 5) enemy.z = MAZE_HEIGHT - 5;
-                
-                attempts++;
-            } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 20);
-            
-            enemy.teleport_cooldown = 240; // 4 segundos de cooldown
-            printf("¡ENEMIGO CAZANDO! Posición: (%.1f, %.1f)\n", enemy.x, enemy.z);
-            
-            // Reproducir sonido de enemigo cuando está cazando
-            play_enemy_sound();
-        }
-    } else if (enemy.is_stalking) {
-        // Modo acecho: teletransportarse a distancia media
-        if (enemy.teleport_cooldown <= 0) {
-            int attempts = 0;
-            do {
-                float angle = (rand() % 360) * M_PI / 180.0f;
-                float distance = (rand() % 15) + 10; // Entre 10 y 25 unidades
-                
-                enemy.x = player.x + cos(angle) * distance;
-                enemy.z = player.z + sin(angle) * distance;
-                
-                // Asegurar que esté dentro del mapa
-                if (enemy.x < 5) enemy.x = 5;
-                if (enemy.x > MAZE_WIDTH - 5) enemy.x = MAZE_WIDTH - 5;
-                if (enemy.z < 5) enemy.z = 5;
-                if (enemy.z > MAZE_HEIGHT - 5) enemy.z = MAZE_HEIGHT - 5;
-                
-                attempts++;
-            } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 20);
-            
-            enemy.teleport_cooldown = 180; // 3 segundos de cooldown
-            printf("Enemigo acechando en (%.1f, %.1f)\n", enemy.x, enemy.z);
-        }
-        
-        // Terminar acecho después del tiempo
-        if (enemy.stalking_timer <= 0) {
-            enemy.is_stalking = false;
-        }
-    } else {
-        // Modo patrulla: teletransportarse aleatoriamente cada 5-10 segundos
-        if (enemy.behavior_timer % (rand() % 300 + 300) == 0 && enemy.teleport_cooldown <= 0) {
-            // Teletransportarse a posición aleatoria
-            int attempts = 0;
-            do {
-                enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
-                enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
-                attempts++;
-            } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 50);
-            
-            enemy.teleport_cooldown = 120; // 2 segundos de cooldown
-            printf("Enemigo patrullando en (%.1f, %.1f)\n", enemy.x, enemy.z);
-        }
-    }
-    
-    // Verificar si está en rango de ataque
+    // Verificar si está en rango de ataque (siempre verificar)
     if (distance_to_player <= enemy.attack_range) {
         printf("¡EL ENEMIGO TE HA ALCANZADO! ¡GAME OVER!\n");
-        
-        // Reproducir sonido de muerte
         play_death_sound();
-        
-        enemy.active = false; // Desactivar enemigo
-        // El juego se cerrará en el bucle principal
+        enemy.active = false;
+        return;
+    }
+    
+    // SISTEMA DE COMPORTAMIENTO ESCALONADO
+    if (enemy.phase == 0) {
+        // FASE 0: Teletransporte aleatorio por 1 minuto
+        if (enemy.phase_timer >= enemy.phase_duration) {
+            // Cambiar a fase 1 (acercamiento gradual)
+            enemy.phase = 1;
+            enemy.phase_timer = 0;
+            printf("ENEMIGO: ¡CAMBIO DE FASE! Ahora comenzará a acercarse...\n");
+        } else {
+            // Teletransportarse aleatoriamente cada 2 segundos
+            if (enemy.behavior_timer - enemy.last_teleport >= enemy.teleport_frequency) {
+                int attempts = 0;
+                do {
+                    // Teletransportarse a posición aleatoria en el mapa
+                    enemy.x = (rand() % (MAZE_WIDTH - 20)) + 10;
+                    enemy.z = (rand() % (MAZE_HEIGHT - 20)) + 10;
+                    attempts++;
+                } while (is_wall((int)enemy.x, (int)enemy.z) && attempts < 50);
+                
+                enemy.last_teleport = enemy.behavior_timer;
+                
+                // Mostrar progreso cada 10 segundos
+                int remaining_time = (enemy.phase_duration - enemy.phase_timer) / 60;
+                if (enemy.phase_timer % 600 == 0) {
+                    printf("ENEMIGO: Teletransporte aleatorio - Tiempo restante: %d segundos\n", remaining_time);
+                }
+            }
+        }
+    } else if (enemy.phase == 1) {
+        // FASE 1: Acercamiento gradual
+        if (enemy.behavior_timer % 180 == 0) { // Cada 3 segundos
+            // Calcular dirección hacia el jugador
+            float dx = player.x - enemy.x;
+            float dz = player.z - enemy.z;
+            float distance = sqrt(dx * dx + dz * dz);
+            
+            if (distance > 0.0f) {
+                // Normalizar dirección
+                dx /= distance;
+                dz /= distance;
+                
+                // Calcular distancia de acercamiento basada en el tiempo en fase 1
+                float phase_progress = (float)enemy.phase_timer / 1800.0f; // 30 segundos para acercamiento completo
+                if (phase_progress > 1.0f) phase_progress = 1.0f;
+                
+                // Distancia de acercamiento: de 50 unidades a 5 unidades
+                float min_distance = 50.0f - (45.0f * phase_progress);
+                float max_distance = min_distance + 10.0f;
+                
+                // Calcular nueva posición
+                float approach_distance = min_distance + (rand() % (int)(max_distance - min_distance));
+                float new_x = player.x - dx * approach_distance;
+                float new_z = player.z - dz * approach_distance;
+                
+                // Asegurar que esté dentro del mapa
+                if (new_x < 5) new_x = 5;
+                if (new_x > MAZE_WIDTH - 5) new_x = MAZE_WIDTH - 5;
+                if (new_z < 5) new_z = 5;
+                if (new_z > MAZE_HEIGHT - 5) new_z = MAZE_HEIGHT - 5;
+                
+                // Verificar que no esté en una pared
+                if (!is_wall((int)new_x, (int)new_z)) {
+                    enemy.x = new_x;
+                    enemy.z = new_z;
+                    
+                    printf("ENEMIGO: Acercándose - Distancia: %.1f unidades\n", approach_distance);
+                    
+                    // Reproducir sonido de enemigo cuando se acerca
+                    if (enemy.behavior_timer % 360 == 0) { // Cada 6 segundos
+                        play_enemy_sound();
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -23,6 +23,13 @@ typedef struct {
     bool is_stalking;     // Si está acechando al jugador
     int stalking_timer;   // Temporizador de acecho
     float last_player_x, last_player_z; // Última posición conocida del jugador
+    
+    // Sistema de comportamiento escalonado
+    int phase;            // 0 = Teletransporte aleatorio, 1 = Acercamiento gradual
+    int phase_timer;      // Temporizador de la fase actual
+    int phase_duration;   // Duración de la fase 0 (1 minuto)
+    int teleport_frequency; // Frecuencia de teletransporte en fase 0
+    int last_teleport;    // Último frame de teletransporte
 } Enemy;
 
 // Variables globales del enemigo
