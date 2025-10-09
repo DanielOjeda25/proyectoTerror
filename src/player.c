@@ -26,7 +26,7 @@ void init_player() {
     player.pitch = 0.0f;
     player.height = 1.8f;  // Altura del jugador 1.80m
     player.rotSpeed = 0.02f;
-    player.mouseSensitivity = 0.001f;  // Sensibilidad más suave y natural
+    player.mouseSensitivity = 0.0005f;  // Sensibilidad reducida para movimiento más suave
     
     // Inicializar sistema de física
     player.velocityY = 0.0f;
@@ -136,8 +136,8 @@ void handle_rotation(float deltaX, float deltaY) {
     // Rotación horizontal (yaw) - estándar: mouse derecha = yaw negativo
     player.yaw -= deltaX * player.mouseSensitivity;
     
-    // Rotación vertical (pitch) con límites - estándar: mouse arriba = pitch positivo
-    player.pitch += deltaY * player.mouseSensitivity;
+    // Rotación vertical (pitch) con límites - invertir eje Y para dirección natural
+    player.pitch -= deltaY * player.mouseSensitivity;
     // Límites más estrictos para evitar problemas de renderizado
     if (player.pitch > M_PI/2 - 0.1f) player.pitch = M_PI/2 - 0.1f;  // Evitar mirar exactamente hacia arriba
     if (player.pitch < -M_PI/2 + 0.1f) player.pitch = -M_PI/2 + 0.1f;  // Evitar mirar exactamente hacia abajo

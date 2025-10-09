@@ -25,6 +25,8 @@ int columnCount = 0;
 int lightCount = 0;
 
 // Variables de renderizado optimizado
+bool map_preloaded = false;
+bool map_generation_complete = false;
 
 // Variables globales para tracking de salida
 static int exit_side = -1;
@@ -33,7 +35,42 @@ static int exit_pos = -1;
 void init_map() {
     // Inicializar sistema de mapas
     srand((unsigned int)time(NULL));
+    map_preloaded = false;
+    map_generation_complete = false;
+}
+
+void preload_map() {
+    if (map_preloaded) return;
+    
+    printf("=== PRECARGANDO MAPA COMPLETO ===\n");
+    printf("Generando mapa de %dx%d celdas...\n", MAZE_WIDTH, MAZE_HEIGHT);
+    
+    // Generar mapa completo
     generate_map();
+    
+    // Marcar como precargado
+    map_preloaded = true;
+    map_generation_complete = true;
+    
+    printf("=== MAPA PRECARGADO COMPLETAMENTE ===\n");
+    printf("Total de celdas: %d\n", MAZE_WIDTH * MAZE_HEIGHT);
+    printf("Salas generadas: %d\n", roomCount);
+    printf("Pasillos generados: %d\n", corridorCount);
+    printf("Columnas generadas: %d\n", columnCount);
+    printf("Puntos de luz: %d\n", lightCount);
+}
+
+bool is_map_ready() {
+    return map_preloaded && map_generation_complete;
+}
+
+void show_loading_progress() {
+    static int progress = 0;
+    progress++;
+    
+    if (progress % 1000 == 0) {
+        printf("Cargando mapa... %d%%\n", (progress / 100) % 100);
+    }
 }
 
 void generate_map() {

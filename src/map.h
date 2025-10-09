@@ -5,9 +5,9 @@
 #include <stdbool.h>
 
 // Constantes del mapa
-#define MAZE_WIDTH 100
-#define MAZE_HEIGHT 100
-#define MAZE_LEVELS 20  // Número de niveles de altura (mucho más alto)
+#define MAZE_WIDTH 200
+#define MAZE_HEIGHT 200
+#define MAZE_LEVELS 25  // Número de niveles de altura (más alto para sensación de enormidad)
 
 // Sistema de renderizado optimizado
 #define RENDER_DISTANCE 30.0f    // Distancia de renderizado en unidades
@@ -52,12 +52,19 @@ extern int columnCount;
 extern int lightCount;
 
 // Variables de renderizado optimizado
+extern bool map_preloaded;
+extern bool map_generation_complete;
 
 // Funciones del mapa
 void init_map();
 void generate_map();
 bool is_wall(int x, int z);
 void cleanup_map();
+
+// Sistema de precarga
+void preload_map();
+bool is_map_ready();
+void show_loading_progress();
 
 // Sistema de renderizado optimizado
 

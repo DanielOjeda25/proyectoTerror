@@ -99,6 +99,22 @@ int main() {
     // Configurar callbacks de input
     setup_input_callbacks(window);
     
+    // PRECARGAR MAPA COMPLETO CON PANTALLA DE CARGA
+    printf("=== INICIANDO PRECARGA DEL MAPA ===\n");
+    
+    // Mostrar pantalla de carga mientras se precarga el mapa
+    while (!is_map_ready()) {
+        // Mostrar pantalla de carga
+        render_map_loading_screen();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+        
+        // Precargar mapa en el hilo principal
+        preload_map();
+    }
+    
+    printf("=== MAPA PRECARGADO EXITOSAMENTE ===\n");
+    
     printf("=== MOTOR 3D - BACKROOMS (MODULAR) ===\n");
     printf("Laberinto 3D generado dinámicamente con UNA SOLA salida\n");
     printf("Sistema de iluminación dinámica y niebla realista activado\n");

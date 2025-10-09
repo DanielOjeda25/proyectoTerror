@@ -5,10 +5,10 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-// Constantes de niebla
-#define FOG_START_DISTANCE 1.5f
-#define FOG_END_DISTANCE 4.0f
-#define FOG_DENSITY 0.95f
+// Constantes de niebla DENSА estilo Silent Hill
+#define FOG_START_DISTANCE 8.0f
+#define FOG_END_DISTANCE 25.0f
+#define FOG_DENSITY 0.08f
 
 // Constantes de iluminación
 #define LIGHT_RANGE 12.0f
@@ -39,6 +39,7 @@ void render_enemy_minimap(); // Added for enemy
 void render_enemy_3d(); // Added for enemy 3D rendering
 void load_loading_texture();
 void render_loading_screen();
+void render_map_loading_screen();
 void setup_additional_lights();
 void cleanup_renderer();
 
