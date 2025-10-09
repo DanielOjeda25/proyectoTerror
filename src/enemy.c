@@ -59,8 +59,15 @@ void init_enemy() {
     enemy.phase = 0; // 0 = Teletransporte aleatorio, 1 = Acercamiento gradual
     enemy.phase_timer = 0;
     enemy.phase_duration = 3600; // 1 minuto = 3600 frames (60 FPS)
-    enemy.teleport_frequency = 120; // Teletransportarse cada 2 segundos en fase 0
+    enemy.teleport_frequency = 600; // Teletransportarse cada 10 segundos en fase 0
     enemy.last_teleport = 0;
+    
+    // Inicializar sistema de IA probabilística
+    enemy.attack_probability = 0.0f;
+    enemy.decision_made = false;
+    enemy.decision_cooldown = 0;
+    enemy.last_distance = 999.0f;
+    enemy.is_deciding = false;
     
     printf("Enemigo inicializado en posición (%.1f, %.1f) - FASE: Teletransporte Aleatorio\n", enemy.x, enemy.z);
 }
@@ -75,6 +82,10 @@ void update_enemy() {
     // Calcular distancia al jugador
     float distance_to_player = sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
                                    (enemy.z - player.z) * (enemy.z - player.z));
+    
+    // SISTEMA DE IA PROBABILÍSTICA
+    // Llamar al sistema de decisión probabilística
+    make_probabilistic_decision();
     
     // Verificar si está en rango de ataque (siempre verificar)
     if (distance_to_player <= enemy.attack_range) {
@@ -110,6 +121,9 @@ void update_enemy() {
                 if (enemy.phase_timer % 600 == 0) {
                     printf("ENEMIGO: Teletransporte aleatorio - Tiempo restante: %d segundos\n", remaining_time);
                 }
+                
+                // Mostrar teletransporte cada vez que se mueve
+                printf("ENEMIGO: Teletransportado a (%.1f, %.1f)\n", enemy.x, enemy.z);
             }
         }
     } else if (enemy.phase == 1) {
@@ -334,6 +348,129 @@ void render_enemy_3d() {
         glDisable(GL_BLEND);
         glEnable(GL_LIGHTING);
     }
+}
+
+// Sistema de IA probabilística
+void make_probabilistic_decision() {
+    if (enemy.is_deciding) return; // Ya está en proceso de decisión
+    
+    float distance_to_player = sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
+                                   (enemy.z - player.z) * (enemy.z - player.z));
+    
+    // Solo decidir si está cerca del jugador (rango de decisión)
+    if (distance_to_player > 10.0f) {
+        enemy.decision_made = false;
+        return;
+    }
+    
+    // Si ya tomó una decisión recientemente, esperar
+    if (enemy.decision_cooldown > 0) {
+        enemy.decision_cooldown--;
+        return;
+    }
+    
+    // Si ya tomó una decisión en este encuentro, no decidir de nuevo
+    if (enemy.decision_made) return;
+    
+    // Calcular probabilidad de ataque
+    enemy.attack_probability = calculate_attack_probability();
+    
+    // Generar número aleatorio para la decisión
+    float random_value = (float)rand() / (float)RAND_MAX;
+    
+    printf("ENEMIGO: Decidiendo... Probabilidad de ataque: %.2f, Random: %.2f\n", 
+           enemy.attack_probability, random_value);
+    
+    enemy.is_deciding = true;
+    enemy.decision_made = true;
+    enemy.decision_cooldown = 600; // 10 segundos de cooldown
+    
+    if (random_value <= enemy.attack_probability) {
+        // DECISIÓN: ATACAR
+        printf("ENEMIGO: ¡DECIDIÓ ATACAR! Probabilidad: %.2f\n", enemy.attack_probability);
+        attack_player();
+    } else {
+        // DECISIÓN: TELETRANSPORTARSE
+        printf("ENEMIGO: ¡DECIDIÓ TELETRANSPORTARSE! Probabilidad: %.2f\n", enemy.attack_probability);
+        teleport_enemy_randomly();
+    }
+    
+    enemy.is_deciding = false;
+}
+
+void teleport_enemy_randomly() {
+    // Teletransportar enemigo a una posición aleatoria lejos del jugador
+    int attempts = 0;
+    float new_x, new_z;
+    
+    do {
+        new_x = (rand() % (MAZE_WIDTH - 20)) + 10;
+        new_z = (rand() % (MAZE_HEIGHT - 20)) + 10;
+        attempts++;
+    } while ((sqrt((new_x - player.x) * (new_x - player.x) + 
+                   (new_z - player.z) * (new_z - player.z)) < 20.0f ||
+             is_wall((int)new_x, (int)new_z)) && attempts < 50);
+    
+    if (attempts < 50) {
+        enemy.x = new_x;
+        enemy.z = new_z;
+        enemy.target_x = enemy.x;
+        enemy.target_z = enemy.z;
+        enemy.is_hunting = false;
+        enemy.last_teleport = enemy.behavior_timer;
+        
+        printf("ENEMIGO: Teletransportado a (%.1f, %.1f)\n", enemy.x, enemy.z);
+    } else {
+        printf("ENEMIGO: No pudo encontrar posición válida para teletransporte\n");
+    }
+}
+
+void attack_player() {
+    // Atacar al jugador (matarlo)
+    printf("ENEMIGO: ¡ATACANDO AL JUGADOR!\n");
+    
+    // Reproducir sonido de ataque
+    play_enemy_sound();
+    
+    // Matar al jugador
+    printf("¡EL ENEMIGO TE HA ATACADO! ¡GAME OVER!\n");
+    play_death_sound();
+    enemy.active = false; // Desactivar enemigo después del ataque
+    
+    // El enemigo se queda en su posición después del ataque
+    enemy.is_hunting = false;
+}
+
+float calculate_attack_probability() {
+    // Calcular probabilidad de ataque basada en varios factores
+    float distance_to_player = sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
+                                   (enemy.z - player.z) * (enemy.z - player.z));
+    
+    float base_probability = 0.05f; // Probabilidad base del 5%
+    
+    // Factor de distancia: más cerca = mayor probabilidad
+    float distance_factor = 1.0f - (distance_to_player / 10.0f);
+    if (distance_factor < 0.0f) distance_factor = 0.0f;
+    if (distance_factor > 1.0f) distance_factor = 1.0f;
+    
+    // Factor de tiempo: más tiempo cazando = mayor probabilidad
+    float time_factor = (float)enemy.behavior_timer / 3600.0f; // Normalizar a 1 minuto
+    if (time_factor > 1.0f) time_factor = 1.0f;
+    
+    // Factor de sospecha
+    float suspicion_factor = enemy.suspicion_level;
+    
+    // Calcular probabilidad final
+    float final_probability = base_probability + 
+                             (distance_factor * 0.1f) + 
+                             (time_factor * 0.05f) + 
+                             (suspicion_factor * 0.05f);
+    
+    // Limitar entre 0.01 y 0.3 (1% a 30%)
+    if (final_probability < 0.01f) final_probability = 0.01f;
+    if (final_probability > 0.3f) final_probability = 0.3f;
+    
+    return final_probability;
 }
 
 bool is_player_dead() {

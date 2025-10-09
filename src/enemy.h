@@ -30,6 +30,13 @@ typedef struct {
     int phase_duration;   // Duración de la fase 0 (1 minuto)
     int teleport_frequency; // Frecuencia de teletransporte en fase 0
     int last_teleport;    // Último frame de teletransporte
+    
+    // Sistema de IA probabilística
+    float attack_probability; // Probabilidad de atacar (0.0 - 1.0)
+    bool decision_made;       // Si ya tomó una decisión en este encuentro
+    int decision_cooldown;    // Cooldown entre decisiones
+    float last_distance;      // Última distancia al jugador
+    bool is_deciding;         // Si está en proceso de decisión
 } Enemy;
 
 // Variables globales del enemigo
@@ -42,5 +49,11 @@ void render_enemy_minimap();
 void render_enemy_3d();
 void check_enemy_collision();
 bool is_player_dead();
+
+// Sistema de IA probabilística
+void make_probabilistic_decision();
+void teleport_enemy_randomly();
+void attack_player();
+float calculate_attack_probability();
 
 #endif // ENEMY_H
