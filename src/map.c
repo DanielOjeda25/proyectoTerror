@@ -391,34 +391,26 @@ void generate_backrooms_pattern() {
 }
 
 void ensure_single_exit() {
-    // Seleccionar UN SOLO borde aleatoriamente para la salida
+    // Crear UNA SOLA salida estrecha en el mapa
     exit_side = rand() % 4; // 0=Norte, 1=Sur, 2=Este, 3=Oeste
     exit_pos = 0;
     
     switch (exit_side) {
-        case 0: // Norte (Z=0)
-            exit_pos = rand() % (MAZE_WIDTH - 4) + 2; // Evitar esquinas
-            maze[exit_pos][0] = 0;
-            maze[exit_pos][1] = 0;
-            maze[exit_pos][2] = 0; // Hacer la salida más ancha
+        case 0: // Norte (Z=0) - Salida estrecha
+            exit_pos = rand() % (MAZE_WIDTH - 2) + 1; // Posición aleatoria
+            maze[exit_pos][0] = 0; // Solo una celda de salida
             break;
-        case 1: // Sur (Z=MAZE_HEIGHT-1)
-            exit_pos = rand() % (MAZE_WIDTH - 4) + 2;
-            maze[exit_pos][MAZE_HEIGHT - 1] = 0;
-            maze[exit_pos][MAZE_HEIGHT - 2] = 0;
-            maze[exit_pos][MAZE_HEIGHT - 3] = 0;
+        case 1: // Sur (Z=MAZE_HEIGHT-1) - Salida estrecha
+            exit_pos = rand() % (MAZE_WIDTH - 2) + 1;
+            maze[exit_pos][MAZE_HEIGHT - 1] = 0; // Solo una celda de salida
             break;
-        case 2: // Este (X=MAZE_WIDTH-1)
-            exit_pos = rand() % (MAZE_HEIGHT - 4) + 2;
-            maze[MAZE_WIDTH - 1][exit_pos] = 0;
-            maze[MAZE_WIDTH - 2][exit_pos] = 0;
-            maze[MAZE_WIDTH - 3][exit_pos] = 0;
+        case 2: // Este (X=MAZE_WIDTH-1) - Salida estrecha
+            exit_pos = rand() % (MAZE_HEIGHT - 2) + 1;
+            maze[MAZE_WIDTH - 1][exit_pos] = 0; // Solo una celda de salida
             break;
-        case 3: // Oeste (X=0)
-            exit_pos = rand() % (MAZE_HEIGHT - 4) + 2;
-            maze[0][exit_pos] = 0;
-            maze[1][exit_pos] = 0;
-            maze[2][exit_pos] = 0;
+        case 3: // Oeste (X=0) - Salida estrecha
+            exit_pos = rand() % (MAZE_HEIGHT - 2) + 1;
+            maze[0][exit_pos] = 0; // Solo una celda de salida
             break;
     }
     
