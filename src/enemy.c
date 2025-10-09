@@ -215,8 +215,8 @@ void render_enemy_3d() {
     float distance = sqrt((enemy.x - player.x) * (enemy.x - player.x) + 
                          (enemy.z - player.z) * (enemy.z - player.z));
     
-    // Renderizar si está a menos de 100 unidades (más visible)
-    if (distance <= 100.0f) {
+    // Renderizar si está a menos de 35 unidades (área de carga aumentada)
+    if (distance <= 35.0f) {
         // Configurar iluminación del enemigo
         float float_height = 2.0f + sin(enemy.behavior_timer * 0.05f) * 0.3f;
         setup_enemy_lighting(enemy.x, float_height, enemy.z);

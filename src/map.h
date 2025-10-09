@@ -4,10 +4,10 @@
 
 #include <stdbool.h>
 
-// Constantes del mapa
-#define MAZE_WIDTH 200
-#define MAZE_HEIGHT 200
-#define MAZE_LEVELS 25  // Número de niveles de altura (más alto para sensación de enormidad)
+// Constantes del mapa - REDUCIDAS PARA MEJOR RENDIMIENTO
+#define MAZE_WIDTH 100
+#define MAZE_HEIGHT 100
+#define MAZE_LEVELS 15  // Número de niveles de altura (reducido para mejor rendimiento)
 
 // Sistema de renderizado optimizado
 #define RENDER_DISTANCE 30.0f    // Distancia de renderizado en unidades

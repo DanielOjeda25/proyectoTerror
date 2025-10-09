@@ -32,7 +32,7 @@ float light_range = LIGHT_RANGE;
 
 // Variables del sistema de carga eliminadas
 
-// Función para frustum culling básico
+// Función para frustum culling basado en perspectiva de cámara
 bool is_in_frustum(int x, int z) {
     // Calcular vector desde el jugador al objeto
     float dx = x - player.x;
@@ -47,8 +47,8 @@ bool is_in_frustum(int x, int z) {
     while (angle_diff > M_PI) angle_diff -= 2.0f * M_PI;
     while (angle_diff < -M_PI) angle_diff += 2.0f * M_PI;
     
-    // Campo de visión de 150 grados (75 grados a cada lado) - más generoso
-    float fov_half = M_PI * 5.0f / 12.0f;
+    // Campo de visión de 180 grados (90 grados a cada lado) - más generoso para perspectiva
+    float fov_half = M_PI / 2.0f;
     
     // Verificar si está dentro del campo de visión
     return fabs(angle_diff) <= fov_half;
@@ -198,11 +198,80 @@ void draw_tall_wall(int x, int z, int levels) {
 }
 
 void draw_floor() {
-    // Configurar material para el suelo - color gris
-    GLfloat ambient[] = {0.3f, 0.3f, 0.3f, 1.0f};  // Gris
-    GLfloat diffuse[] = {0.6f, 0.6f, 0.6f, 1.0f};   // Gris medio
-    GLfloat specular[] = {0.2f, 0.2f, 0.2f, 1.0f}; // Brillo sutil
-    GLfloat shininess[] = {32.0f};
+    // Configurar material para el suelo - color gris con niveles
+    GLfloat ambient[] = {0.4f, 0.4f, 0.4f, 1.0f};  // Gris más claro
+    GLfloat diffuse[] = {0.7f, 0.7f, 0.7f, 1.0f};   // Gris medio más visible
+    GLfloat specular[] = {0.1f, 0.1f, 0.1f, 1.0f}; // Brillo muy sutil
+    GLfloat shininess[] = {16.0f};
+    
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+    
+    // Dibujar suelo con múltiples niveles para crear verticalidad
+    glBegin(GL_QUADS);
+    
+    // Nivel principal (0.0) - superficie principal
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, 0.0f, 200.0f);
+    glVertex3f(-200.0f, 0.0f, 200.0f);
+    
+    // Nivel secundario (-0.2) - profundidad del terreno
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-200.0f, -0.2f, -200.0f);
+    glVertex3f(200.0f, -0.2f, -200.0f);
+    glVertex3f(200.0f, -0.2f, 200.0f);
+    glVertex3f(-200.0f, -0.2f, 200.0f);
+    
+    // Nivel terciario (-0.4) - base del terreno
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-200.0f, -0.4f, -200.0f);
+    glVertex3f(200.0f, -0.4f, -200.0f);
+    glVertex3f(200.0f, -0.4f, 200.0f);
+    glVertex3f(-200.0f, -0.4f, 200.0f);
+    
+    // Paredes laterales para conectar los niveles
+    // Pared frontal (Z = -200)
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glVertex3f(-200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, -0.4f, -200.0f);
+    glVertex3f(-200.0f, -0.4f, -200.0f);
+    
+    // Pared trasera (Z = 200)
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(-200.0f, 0.0f, 200.0f);
+    glVertex3f(-200.0f, -0.4f, 200.0f);
+    glVertex3f(200.0f, -0.4f, 200.0f);
+    glVertex3f(200.0f, 0.0f, 200.0f);
+    
+    // Pared izquierda (X = -200)
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glVertex3f(-200.0f, 0.0f, -200.0f);
+    glVertex3f(-200.0f, -0.4f, -200.0f);
+    glVertex3f(-200.0f, -0.4f, 200.0f);
+    glVertex3f(-200.0f, 0.0f, 200.0f);
+    
+    // Pared derecha (X = 200)
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(200.0f, 0.0f, -200.0f);
+    glVertex3f(200.0f, 0.0f, 200.0f);
+    glVertex3f(200.0f, -0.4f, 200.0f);
+    glVertex3f(200.0f, -0.4f, -200.0f);
+    
+    glEnd();
+}
+
+void draw_terrain_variations() {
+    // Dibujar variaciones en el terreno para crear más verticalidad
+    // Configurar material para variaciones del terreno
+    GLfloat ambient[] = {0.35f, 0.35f, 0.35f, 1.0f};  // Gris ligeramente diferente
+    GLfloat diffuse[] = {0.65f, 0.65f, 0.65f, 1.0f};   // Gris medio
+    GLfloat specular[] = {0.05f, 0.05f, 0.05f, 1.0f}; // Brillo muy sutil
+    GLfloat shininess[] = {8.0f};
     
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
@@ -210,12 +279,83 @@ void draw_floor() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
     
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f); // Normal hacia arriba
-    glVertex3f(-400.0f, 0.0f, -400.0f);
-    glVertex3f(400.0f, 0.0f, -400.0f);
-    glVertex3f(400.0f, 0.0f, 400.0f);
-    glVertex3f(-400.0f, 0.0f, 400.0f);
+    
+    // Crear variaciones en el terreno con diferentes alturas
+    // Variación 1: Área central más alta
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-100.0f, 0.1f, -100.0f);
+    glVertex3f(100.0f, 0.1f, -100.0f);
+    glVertex3f(100.0f, 0.1f, 100.0f);
+    glVertex3f(-100.0f, 0.1f, 100.0f);
+    
+    // Variación 2: Área periférica más baja
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-200.0f, -0.1f, -200.0f);
+    glVertex3f(-100.0f, -0.1f, -200.0f);
+    glVertex3f(-100.0f, -0.1f, -100.0f);
+    glVertex3f(-200.0f, -0.1f, -100.0f);
+    
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(100.0f, -0.1f, -200.0f);
+    glVertex3f(200.0f, -0.1f, -200.0f);
+    glVertex3f(200.0f, -0.1f, -100.0f);
+    glVertex3f(100.0f, -0.1f, -100.0f);
+    
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-200.0f, -0.1f, 100.0f);
+    glVertex3f(-100.0f, -0.1f, 100.0f);
+    glVertex3f(-100.0f, -0.1f, 200.0f);
+    glVertex3f(-200.0f, -0.1f, 200.0f);
+    
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(100.0f, -0.1f, 100.0f);
+    glVertex3f(200.0f, -0.1f, 100.0f);
+    glVertex3f(200.0f, -0.1f, 200.0f);
+    glVertex3f(100.0f, -0.1f, 200.0f);
+    
+    // Paredes de transición entre niveles
+    // Transición de área central a periférica
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glVertex3f(-100.0f, 0.1f, -100.0f);
+    glVertex3f(100.0f, 0.1f, -100.0f);
+    glVertex3f(100.0f, -0.1f, -100.0f);
+    glVertex3f(-100.0f, -0.1f, -100.0f);
+    
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(-100.0f, 0.1f, 100.0f);
+    glVertex3f(-100.0f, -0.1f, 100.0f);
+    glVertex3f(100.0f, -0.1f, 100.0f);
+    glVertex3f(100.0f, 0.1f, 100.0f);
+    
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glVertex3f(-100.0f, 0.1f, -100.0f);
+    glVertex3f(-100.0f, -0.1f, -100.0f);
+    glVertex3f(-100.0f, -0.1f, 100.0f);
+    glVertex3f(-100.0f, 0.1f, 100.0f);
+    
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(100.0f, 0.1f, -100.0f);
+    glVertex3f(100.0f, 0.1f, 100.0f);
+    glVertex3f(100.0f, -0.1f, 100.0f);
+    glVertex3f(100.0f, -0.1f, -100.0f);
+    
     glEnd();
+}
+
+float get_terrain_height(float x, float z) {
+    // Calcular la altura del terreno basada en la posición
+    // Área central elevada (100x100)
+    if (x >= -100.0f && x <= 100.0f && z >= -100.0f && z <= 100.0f) {
+        return 0.1f; // Área central elevada
+    }
+    // Área periférica hundida
+    else if ((x < -100.0f || x > 100.0f) || (z < -100.0f || z > 100.0f)) {
+        return -0.1f; // Área periférica hundida
+    }
+    // Área de transición (suave)
+    else {
+        return 0.0f; // Nivel base
+    }
 }
 
 void draw_ceiling() {
@@ -233,31 +373,31 @@ void draw_ceiling() {
     glBegin(GL_QUADS);
     glNormal3f(0.0f, -1.0f, 0.0f); // Normal hacia abajo
     float ceiling_height = MAZE_LEVELS + 2.0f; // Techo más alto
-    glVertex3f(-400.0f, ceiling_height, -400.0f);
-    glVertex3f(400.0f, ceiling_height, -400.0f);
-    glVertex3f(400.0f, ceiling_height, 400.0f);
-    glVertex3f(-400.0f, ceiling_height, 400.0f);
+    glVertex3f(-200.0f, ceiling_height, -200.0f);
+    glVertex3f(200.0f, ceiling_height, -200.0f);
+    glVertex3f(200.0f, ceiling_height, 200.0f);
+    glVertex3f(-200.0f, ceiling_height, 200.0f);
     glEnd();
 }
 
 void setup_fog() {
-    // Configurar niebla DENSА estilo Silent Hill para ocultar objetos lejanos
+    // Configurar niebla EQUILIBRADA estilo Silent Hill - visible pero atmosférica
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_EXP2); // Usar niebla exponencial
-    glFogf(GL_FOG_DENSITY, 0.08f); // Densidad MUY ALTA para ocultar todo lo lejano
-    glFogf(GL_FOG_START, 8.0f); // Comenzar la niebla MUY CERCA
-    glFogf(GL_FOG_END, 25.0f); // Terminar la niebla MUY CERCA (como Silent Hill)
+    glFogf(GL_FOG_DENSITY, 0.12f); // Densidad equilibrada - visible pero densa
+    glFogf(GL_FOG_START, 5.0f); // Comenzar la niebla CERCA
+    glFogf(GL_FOG_END, 25.0f); // Terminar la niebla a distancia media - equilibrada
     
-    // Color de la niebla más denso y atmosférico
-    GLfloat fogColor[4] = {0.15f, 0.15f, 0.18f, 1.0f}; // Gris muy oscuro y denso
+    // Color de la niebla equilibrado y atmosférico
+    GLfloat fogColor[4] = {0.15f, 0.15f, 0.18f, 1.0f}; // Gris equilibrado
     glFogfv(GL_FOG_COLOR, fogColor);
 }
 
 void update_fog_distance() {
-    // Mantener niebla DENSА estilo Silent Hill para máximo rendimiento
-    glFogf(GL_FOG_START, 8.0f);
+    // Mantener niebla EQUILIBRADA estilo Silent Hill - visible pero atmosférica
+    glFogf(GL_FOG_START, 5.0f);
     glFogf(GL_FOG_END, 25.0f);
-    glFogf(GL_FOG_DENSITY, 0.08f);
+    glFogf(GL_FOG_DENSITY, 0.12f);
 }
 
 void setup_lighting() {
@@ -321,11 +461,11 @@ void setup_enemy_lighting(float x, float y, float z) {
 }
 
 void update_fog_based_on_lighting() {
-    // Niebla DENSА estilo Silent Hill - siempre densa para máximo rendimiento
+    // Niebla EQUILIBRADA estilo Silent Hill - visible pero atmosférica
     // No ajustar basado en iluminación para mantener consistencia
-    fog_density = 0.08f; // Siempre densa
-    fog_start = 8.0f; // Siempre cerca
-    fog_end = 25.0f; // Siempre cerca
+    fog_density = 0.12f; // Siempre equilibrada - visible pero densa
+    fog_start = 5.0f; // Siempre cerca - equilibrada
+    fog_end = 25.0f; // Siempre distancia media - equilibrada
 }
 
 void update_lighting() {
@@ -388,13 +528,13 @@ void render_world() {
     // Actualizar niebla dinámicamente
     update_fog_distance();
     
-    // Forzar configuración de niebla DENSА estilo Silent Hill en cada frame
+    // Forzar configuración de niebla EQUILIBRADA estilo Silent Hill en cada frame
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_EXP2);
-    glFogf(GL_FOG_DENSITY, 0.08f); // Densidad MUY ALTA
-    glFogf(GL_FOG_START, 8.0f); // MUY CERCA
-    glFogf(GL_FOG_END, 25.0f); // MUY CERCA
-    GLfloat fogColor[4] = {0.15f, 0.15f, 0.18f, 1.0f}; // Muy denso
+    glFogf(GL_FOG_DENSITY, 0.12f); // Densidad equilibrada - visible pero densa
+    glFogf(GL_FOG_START, 5.0f); // CERCA
+    glFogf(GL_FOG_END, 25.0f); // DISTANCIA MEDIA - equilibrada
+    GLfloat fogColor[4] = {0.15f, 0.15f, 0.18f, 1.0f}; // Equilibrado
     glFogfv(GL_FOG_COLOR, fogColor);
     
     // Actualizar iluminación dinámica (cada 3 frames para mejor rendimiento)
@@ -407,18 +547,20 @@ void render_world() {
     // Actualizar partículas
     update_particles();
     
-    // Dibujar suelo y techo
+    // Dibujar suelo y techo DESPUÉS de configurar la niebla
+    // (para que estén afectados por la niebla densa)
     draw_floor();
+    draw_terrain_variations(); // Añadir variaciones del terreno
     draw_ceiling();
     
-    // Renderizar el laberinto 3D con niebla densa estilo Silent Hill (ULTRA EFICIENTE)
-    // Calcular rango de renderizado MUY REDUCIDO para máximo rendimiento
-    float render_distance = 20.0f; // Distancia MUY REDUCIDA (como Silent Hill)
+    // Renderizar el laberinto 3D basado en la PERSPECTIVA DE LA CÁMARA
+    // Calcular rango de renderizado basado en la dirección de la cámara
+    float render_distance = 35.0f; // Distancia aumentada para área de carga más grande
     
     // Optimización: usar distancia al cuadrado para evitar sqrt costoso
     float render_distance_sq = render_distance * render_distance;
     
-    // Sistema optimizado: área más grande pero con prioridades
+    // Sistema basado en perspectiva de cámara: área más grande en la dirección de la mirada
     int start_x = (int)(player.x - render_distance);
     int end_x = (int)(player.x + render_distance);
     int start_z = (int)(player.z - render_distance);
@@ -430,6 +572,8 @@ void render_world() {
     if (start_z < 0) start_z = 0;
     if (end_z >= MAZE_HEIGHT) end_z = MAZE_HEIGHT - 1;
     
+    // Renderizar basado en la perspectiva de la cámara
+    // Priorizar objetos en la dirección de la mirada del jugador
     for (int x = start_x; x <= end_x; x++) {
         for (int z = start_z; z <= end_z; z++) {
             if (maze[x][z] == 1) { // Si hay una pared
@@ -447,16 +591,16 @@ void render_world() {
                     bool should_render = false;
                     int levels = MAZE_LEVELS;
                     
-                    if (distance <= 15.0f) {
-                        // Zona MUY cercana: siempre renderizar (niebla densa oculta el resto)
+                    if (distance <= 25.0f) {
+                        // Zona cercana: siempre renderizar (área de carga aumentada)
                         should_render = true;
                         levels = MAZE_LEVELS;
-                    } else if (distance <= 20.0f) {
-                        // Zona cercana: renderizar con frustum culling (niebla densa oculta el resto)
+                    } else if (distance <= 35.0f) {
+                        // Zona media: renderizar con frustum culling basado en perspectiva
                         should_render = is_in_frustum(x, z);
                         levels = MAZE_LEVELS;
                     } else {
-                        // Zona lejana: NO RENDERIZAR (oculto por niebla densa)
+                        // Zona lejana: NO RENDERIZAR (oculto por niebla)
                         should_render = false;
                         levels = 0;
                     }
@@ -475,7 +619,7 @@ void render_world() {
                 float dx = x - player.x;
                 float dz = z - player.z;
                 float distance_sq = dx * dx + dz * dz;
-                float decor_distance_sq = 20.0f * 20.0f;
+                float decor_distance_sq = 35.0f * 35.0f;
                 
                 // Sistema de prioridades para elementos decorativos
                 if (distance_sq <= decor_distance_sq) {
@@ -483,16 +627,16 @@ void render_world() {
                     bool should_render = false;
                     float size = 0.2f;
                     
-                    if (distance <= 12.0f) {
-                        // Zona MUY cercana: siempre renderizar (niebla densa oculta el resto)
+                    if (distance <= 20.0f) {
+                        // Zona cercana: siempre renderizar (área de carga aumentada)
                         should_render = true;
                         size = 0.2f;
-                    } else if (distance <= 20.0f) {
-                        // Zona cercana: con frustum culling (niebla densa oculta el resto)
+                    } else if (distance <= 35.0f) {
+                        // Zona media: con frustum culling basado en perspectiva
                         should_render = is_in_frustum(x, z);
                         size = 0.2f;
                     } else {
-                        // Zona lejana: NO RENDERIZAR (oculto por niebla densa)
+                        // Zona lejana: NO RENDERIZAR (oculto por niebla)
                         should_render = false;
                         size = 0.0f;
                     }
@@ -512,142 +656,17 @@ void render_world() {
     // Renderizar enemigo 3D
     render_enemy_3d();
     
-    // Renderizar mini mapa 2D
-    render_minimap();
+    // Mini mapa eliminado para mejor rendimiento
     
     // Renderizar partículas
     render_particles();
 }
 
-void render_minimap() {
-    // Guardar estado actual de OpenGL
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glPushMatrix();
-    
-    // Deshabilitar depth testing para el mini mapa
-    glDisable(GL_DEPTH_TEST);
-    
-    // Configurar proyección ortogonal para el mini mapa
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0, windowWidth, windowHeight, 0, -1, 1);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    
-    // Dibujar mini mapa en la esquina superior derecha
-    draw_minimap_background();
-    draw_minimap_walls();
-    draw_minimap_player();
-    render_enemy_minimap(); // Added for enemy
-    
-    // Restaurar matrices
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    
-    // Restaurar estado de OpenGL
-    glPopMatrix();
-    glPopAttrib();
-}
+// Todas las funciones del minimapa eliminadas para mejor rendimiento
 
-void draw_minimap_background() {
-    float minimapSize = 200.0f;
-    float x = windowWidth - minimapSize - 10;
-    float y = 10;
-    
-    // Habilitar blending para el fondo
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glColor4f(0.0f, 0.0f, 0.0f, 0.8f);
-    
-    // Dibujar fondo del mini mapa
-    glBegin(GL_QUADS);
-    glVertex2f(x, y);
-    glVertex2f(x + minimapSize, y);
-    glVertex2f(x + minimapSize, y + minimapSize);
-    glVertex2f(x, y + minimapSize);
-    glEnd();
-    
-    // Dibujar borde del mini mapa
-    glDisable(GL_BLEND);
-    glColor3f(0.8f, 0.8f, 0.8f); // Color del borde
-    glLineWidth(2.0f);
-    glBegin(GL_LINE_LOOP);
-    glVertex2f(x, y);
-    glVertex2f(x + minimapSize, y);
-    glVertex2f(x + minimapSize, y + minimapSize);
-    glVertex2f(x, y + minimapSize);
-    glEnd();
-    glLineWidth(1.0f);
-}
-
-void draw_minimap_walls() {
-    float minimapSize = 200.0f;
-    float x = windowWidth - minimapSize - 10;
-    float y = 10;
-    float scale = minimapSize / MAZE_WIDTH; // Escala para el mini mapa
-    
-    // Asegurar que no hay blending para muros sólidos
-    glDisable(GL_BLEND);
-    glColor3f(1.0f, 1.0f, 1.0f); // Color de las paredes más brillante
-    
-    for (int mx = 0; mx < MAZE_WIDTH; mx++) {
-        for (int mz = 0; mz < MAZE_HEIGHT; mz++) {
-            if (maze[mx][mz] == 1) { // Si hay una pared
-                float mapX = x + mx * scale;
-                float mapY = y + mz * scale;
-                
-                glBegin(GL_QUADS);
-                glVertex2f(mapX, mapY);
-                glVertex2f(mapX + scale, mapY);
-                glVertex2f(mapX + scale, mapY + scale);
-                glVertex2f(mapX, mapY + scale);
-                glEnd();
-            }
-        }
-    }
-    
-    // Debug removido para mejor rendimiento
-}
-
-void draw_minimap_player() {
-    float minimapSize = 200.0f;
-    float x = windowWidth - minimapSize - 10;
-    float y = 10;
-    float scale = minimapSize / MAZE_WIDTH;
-    
-    // Posición del jugador en el mini mapa
-    float playerMapX = x + player.x * scale;
-    float playerMapY = y + player.z * scale;
-    
-    // Dibujar jugador como círculo con dirección
-    glDisable(GL_BLEND);
-    glColor3f(1.0f, 0.0f, 0.0f); // Rojo brillante para el jugador
-    
-    // Dibujar círculo del jugador más grande
-    float radius = scale * 3.0f; // Aumentado de 1.5f a 3.0f
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex2f(playerMapX, playerMapY); // Centro
-    for (int i = 0; i <= 32; i++) {
-        float angle = 2.0f * M_PI * i / 32.0f;
-        glVertex2f(playerMapX + cos(angle) * radius, playerMapY + sin(angle) * radius);
-    }
-    glEnd();
-    
-    // Dibujar dirección como línea
-    float arrowLength = scale * 2.0f;
-    float arrowX = playerMapX + cos(player.yaw) * arrowLength;
-    float arrowY = playerMapY + sin(player.yaw) * arrowLength;
-    
-    glLineWidth(2.0f);
-    glBegin(GL_LINES);
-    glVertex2f(playerMapX, playerMapY);
-    glVertex2f(arrowX, arrowY);
-    glEnd();
+void cleanup_renderer() {
+    // Limpiar recursos del renderizador
+    // Funciones del minimapa eliminadas para mejor rendimiento
 }
 
 void render_map_loading_screen() {
@@ -749,7 +768,4 @@ void render_map_loading_screen() {
     glEnable(GL_DEPTH_TEST);
 }
 
-void cleanup_renderer() {
-    // Limpiar recursos de renderizado
-    // Textura de carga eliminada
-}
+// Función cleanup_renderer ya definida anteriormente

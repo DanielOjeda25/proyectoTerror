@@ -31,6 +31,7 @@ void handle_movement();
 void handle_rotation(float deltaX, float deltaY);
 void handle_jumping();
 void apply_gravity();
+void adjust_player_to_terrain();
 bool check_collision(float newX, float newZ);
 bool check_ground_collision(float newX, float newY, float newZ);
 void cleanup_player();

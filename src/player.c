@@ -52,8 +52,33 @@ void update_player() {
     handle_jumping();
     apply_gravity();
     
+    // Ajustar altura del jugador basada en el terreno
+    adjust_player_to_terrain();
+    
     // Actualizar sistema de audio
     update_audio();
+}
+
+void adjust_player_to_terrain() {
+    // Obtener la altura del terreno en la posición actual del jugador
+    extern float get_terrain_height(float x, float z);
+    float terrain_height = get_terrain_height(player.x, player.z);
+    
+    // Ajustar la altura del jugador para que esté sobre el terreno
+    // Mantener la altura mínima del jugador
+    float min_height = terrain_height + player.height;
+    
+    // Si el jugador está por debajo del terreno, elevarlo
+    if (player.y < min_height) {
+        player.y = min_height;
+        player.velocityY = 0.0f; // Detener velocidad vertical
+        player.isGrounded = true;
+    }
+    
+    // Si el jugador está muy por encima del terreno, aplicar gravedad suave
+    else if (player.y > min_height + 0.5f) {
+        player.velocityY -= 0.002f; // Gravedad suave hacia el terreno
+    }
 }
 
 void handle_movement() {
